@@ -217,6 +217,10 @@ jobs:
       packages: read
       attestations: read
     uses: ./.github/workflows/deploy.yml
+    # The deploy key and known_hosts are secrets of the "production" environment; a called workflow only sees
+    # them when the caller passes its secrets on (without this the deploy silently skipped). The called
+    # workflow is local and its job is the only one bound to that environment.
+    secrets: inherit # zizmor: ignore[secrets-inherit]
     with:
       ref: ${{ github.sha }}
 
