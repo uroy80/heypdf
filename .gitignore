@@ -14,3 +14,4 @@ models/
 tests/output/
 *.log
 .work/
+.claude/
