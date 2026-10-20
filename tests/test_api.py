@@ -100,7 +100,7 @@ def test_security_headers(client):
 def test_static_ui_served_with_revalidation(client):
     index = client.get("/")
     assert index.status_code == 200 and index.headers["content-type"].startswith("text/html")
-    assert index.headers["cache-control"] == "no-cache"
+    assert index.headers["cache-control"] == "no-cache, no-transform"
     assert index.headers["content-security-policy"] == CSP
     assert "<title>heypdf :)" in index.text
     script = client.get("/js/main.js")

@@ -249,7 +249,7 @@ def test_spa_fallback(client):
     for path in ("/", "/merge", "/compress/", "/scan", "/phone", "/phone/abcdefghijklmnop"):
         res = client.get(path)
         assert res.status_code == 200 and "<title>heypdf :)" in res.text, path
-        assert res.headers["cache-control"] == "no-cache"
+        assert res.headers["cache-control"] == "no-cache, no-transform"
     assert client.get("/js/main.js").headers["content-type"].startswith("text/javascript")
     assert client.get("/js/missing.js").status_code == 404  # never index.html for assets
     for path in ("/api/nope", "/api/files/x/y/z", "/docs", "/redoc", "/openapi.json"):
@@ -293,7 +293,7 @@ def test_hosted_mode_answers_api_requests_with_no_store(make_client):
     for path in (f"/api/files/{f['id']}", f"/api/files/{f['id']}/preview", f"/api/files/{f['id']}/download",
                  "/api/health", "/api/config"):
         assert c.get(path).headers["cache-control"] == "no-store", path
-    assert c.get("/").headers["cache-control"] == "no-cache"
+    assert c.get("/").headers["cache-control"] == "no-cache, no-transform"
 
 
 def test_local_mode_lets_the_browser_cache_previews(client):
