@@ -1,0 +1,18 @@
+# /etc/logrotate.d/heypdf-httpd — keep heypdf's Apache logs HEYP_LOG_RETENTION_DAYS days (here 14), as
+# legal/privacy.md says. If you change the number, change HEYP_LOG_RETENTION_DAYS in /etc/heypdf/heypdf.env too (it is
+# printed on /privacy). The logs live in /var/log/httpd-heypdf/, outside the stock /etc/logrotate.d/httpd rule
+# (/var/log/httpd/*log: weekly, 4 copies), so this is the only rule that applies to them.
+/var/log/httpd-heypdf/*.log {
+    daily
+    rotate 14
+    maxage 14
+    missingok
+    notifempty
+    compress
+    delaycompress
+    dateext
+    sharedscripts
+    postrotate
+        /bin/systemctl reload httpd.service >/dev/null 2>&1 || true
+    endscript
+}

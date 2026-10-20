@@ -1,0 +1,28 @@
+# Runtime dependencies (top level, human-edited). The image installs the fully pinned, hash-checked
+# requirements.lock instead; regenerate it with scripts/lock.sh after editing this file.
+fastapi==0.143.2
+# Plain uvicorn plus the two speed-ups from uvicorn[standard]; its reload/websocket/yaml/dotenv extras
+# are not used by heypdf (dev --reload falls back to StatReload).
+uvicorn==0.54.0
+uvloop==0.23.0 ; sys_platform != "win32" and sys_platform != "cygwin" and platform_python_implementation != "PyPy"
+httptools==0.9.0
+python-multipart==0.0.32
+# --- images in (JPG → PDF, Scan to PDF, signature and stamp images) ----------------------------------
+pillow==12.3.0
+pillow-heif==1.8.1
+numpy==2.5.4
+opencv-python-headless==5.0.0.93  # Scan to PDF (page detection, perspective), Compare PDF (visual diff)
+resvg-py==0.5.0          # SVG → raster (MIT); always called with an explicit size cap + bundled fonts
+rawpy==0.27.1            # camera RAW (LibRaw, LGPL/CDDL)
+psd-tools==1.23.0        # 16/32-bit PSD + PSB (Pillow handles 8-bit composites)
+# --- PDF engines (AGPL-compatible) -----------------------------------------------------------------
+pymupdf==1.28.2          # MuPDF (AGPL-3.0) — merge/split/organize/render/redact/forms/edit/compare/markdown
+pikepdf==10.16.0         # qpdf — protect/unlock (known password only)/repair
+img2pdf==0.6.3           # lossless JPG → PDF
+pyhanko==0.37.0          # PAdES signatures with a user-supplied .p12
+pyhanko-certvalidator==0.32.1
+pdf2docx==0.5.13         # PDF → Word
+python-docx==1.2.0
+openpyxl==3.1.5          # PDF → Excel
+# --- AI tools (off unless ANTHROPIC_API_KEY is set) -------------------------------------------------
+anthropic==1.11.0

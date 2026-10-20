@@ -1,0 +1,376 @@
+# CI: lint, tests (Python, UI, services), the four runtime images built + smoke-tested + scanned, a full-stack
+# compose smoke test of deploy/compose.prod.yml, CodeQL and dependency review.
+# Branch protection: require the single "CI OK" check (it fails if any job failed or was cancelled).
+# Every action is pinned to a full commit SHA (tag in the comment); Dependabot keeps both up to date.
+#
+# Images (keep in sync with release.yml, deploy.yml, deploy/compose.prod.yml; tests/test_delivery.py checks it):
+#   heypdf           Dockerfile (target runtime)           the app: UI, API, job runner, PDF engines
+#   heypdf-docs      services/docs/Dockerfile              LibreOffice, OCRmyPDF, Ghostscript (no network)
+#   heypdf-renderer  services/renderer/Dockerfile          Playwright + Chromium (isolated network, socket)
+#   heypdf-egress    services/egress/Dockerfile            the renderer's only way out (allow-list proxy)
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  merge_group:
+  schedule:
+    - cron: "23 5 * * 1" # Mondays: rescan the images against fresh vulnerability data
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  RUFF_VERSION: "0.17.1"
+  NODE_VERSION: "24"
+  GRYPE_VERSION: "v0.120.1"
+
+jobs:
+  lint:
+    name: Lint (ruff, shellcheck, actionlint, deploy configs)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: ruff check
+        uses: astral-sh/ruff-action@278981a28ce3188b1e39527901f38254bf3aac89 # v4.1.0
+        with:
+          version: ${{ env.RUFF_VERSION }}
+          args: check --output-format=github
+      - name: shellcheck
+        run: |
+          docker run --rm -v "$PWD:/mnt:ro" -w /mnt \
+            koalaman/shellcheck:v0.11.0@sha256:61862eba1fcf09a484ebcc6feea46f1782532571a34ed51fedf90dd25f925a8d \
+            -x scripts/*.sh services/*.sh services/e2e/*.sh .github/scripts/*.sh deploy/*.sh deploy/apache/*.sh \
+            deploy/heypdf-deploy deploy/heypdf-egress-guard
+      - name: actionlint
+        run: |
+          docker run --rm -v "$PWD:/repo:ro" -w /repo \
+            rhysd/actionlint:1.7.12@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 -color
+      - name: Deploy configs (compose, httpd -t + Apache/Cloudflare behaviour, seccomp)
+        run: .github/scripts/validate-deploy.sh
+
+  zizmor:
+    name: Workflow security (zizmor)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: zizmorcore/zizmor-action@85b2b9fb8e3325e7a23d7d0a9d7ba5ae0f999e3e # v0.7.1
+        with:
+          version: "1.31.1"
+          advanced-security: false # fail the job with annotations instead of uploading SARIF
+          min-severity: medium
+
+  test-python:
+    name: Python tests (dev image)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - name: Build the dev image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          target: dev
+          tags: heypdf:dev
+          load: true
+          provenance: false
+          cache-from: type=gha,scope=dev-amd64
+          cache-to: type=gha,scope=dev-amd64,mode=max
+      - name: pytest (no network; service tests run in the stack job)
+        run: docker run --rm --network none -v "$PWD:/app" -w /app heypdf:dev pytest -q -m "not services"
+
+  test-ui:
+    name: UI tests (node --check, node --test)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Syntax of every served script
+        run: find static -name '*.js' -not -path '*/tests/*' -print0 | xargs -0 -n1 node --check
+      - name: UI unit tests
+        run: node --test static/tests/*.test.mjs
+
+  test-services:
+    name: Service tests (${{ matrix.service }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [docs, renderer, egress]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Does the image have a test stage?
+        id: stage
+        env:
+          SERVICE: ${{ matrix.service }}
+        run: |
+          if grep -qiE '^FROM[[:space:]].*[[:space:]]AS[[:space:]]+test[[:space:]]*$' "services/$SERVICE/Dockerfile" 2>/dev/null; then
+            echo "test=true" >>"$GITHUB_OUTPUT"
+          else
+            echo "::notice::services/$SERVICE has no 'test' stage"
+            echo "test=false" >>"$GITHUB_OUTPUT"
+          fi
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+        if: steps.stage.outputs.test == 'true'
+      - name: Build the test stage
+        if: steps.stage.outputs.test == 'true'
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: services/${{ matrix.service }}
+          target: test
+          tags: heypdf-ci/${{ matrix.service }}-tests:local
+          load: true
+          provenance: false
+          cache-from: |
+            type=gha,scope=heypdf-${{ matrix.service }}-amd64
+            type=gha,scope=${{ matrix.service }}-tests
+          cache-to: type=gha,scope=${{ matrix.service }}-tests,mode=max
+      - name: Run it (no network, no capabilities)
+        if: steps.stage.outputs.test == 'true'
+        env:
+          SERVICE: ${{ matrix.service }}
+        run: |
+          docker run --rm --network none --init --cap-drop ALL --security-opt no-new-privileges:true \
+            --shm-size 256m --tmpfs /tmp:size=1g,mode=1777 "heypdf-ci/$SERVICE-tests:local"
+
+  images:
+    name: Image ${{ matrix.image }} (build, smoke, scan)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      security-events: write # SARIF upload to code scanning (skipped for fork PRs)
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { image: heypdf, context: ., kind: app }
+          - { image: heypdf-docs, context: services/docs, kind: docs }
+          - { image: heypdf-renderer, context: services/renderer, kind: renderer }
+          - { image: heypdf-egress, context: services/egress, kind: egress }
+    env:
+      IMAGE: heypdf-ci/${{ matrix.image }}:test
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Runtime stage
+        id: target
+        env:
+          CONTEXT: ${{ matrix.context }}
+        run: |
+          # The stage named "runtime", else the Dockerfile's last stage.
+          if grep -qiE '^FROM[[:space:]].*[[:space:]]AS[[:space:]]+runtime[[:space:]]*$' "$CONTEXT/Dockerfile"; then
+            echo "target=runtime" >>"$GITHUB_OUTPUT"
+          else
+            echo "target=" >>"$GITHUB_OUTPUT"
+          fi
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - name: Build (linux/amd64)
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: ${{ matrix.context }}
+          target: ${{ steps.target.outputs.target }}
+          tags: ${{ env.IMAGE }}
+          load: true
+          provenance: false
+          labels: |
+            org.opencontainers.image.revision=${{ github.sha }}
+          build-args: |
+            HEYP_VERSION=ci
+            HEYP_REVISION=${{ github.sha }}
+          # Same scope as the release build of this image, so main's cache warms both.
+          cache-from: type=gha,scope=${{ matrix.image }}-amd64
+          cache-to: type=gha,scope=${{ matrix.image }}-amd64,mode=max
+      - name: Smoke test (hardened like production)
+        env:
+          KIND: ${{ matrix.kind }}
+        run: .github/scripts/smoke-image.sh "$IMAGE" "$KIND"
+      - name: Vulnerability report (Grype → SARIF)
+        id: report
+        uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
+        with:
+          image: ${{ env.IMAGE }}
+          grype-version: ${{ env.GRYPE_VERSION }}
+          fail-build: false
+          output-format: sarif
+          cache-db: true
+      - name: Upload SARIF
+        if: ${{ !cancelled() && steps.report.outputs.sarif != '' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+        uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
+        with:
+          sarif_file: ${{ steps.report.outputs.sarif }}
+          category: grype-${{ matrix.image }}
+      - name: Gate — no fixable critical vulnerabilities
+        uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
+        with:
+          image: ${{ env.IMAGE }}
+          grype-version: ${{ env.GRYPE_VERSION }}
+          fail-build: true
+          severity-cutoff: critical
+          only-fixed: true
+          output-format: table
+          cache-db: true
+
+  stack:
+    # deploy/compose.prod.yml end to end: the same file heypdf-deploy runs on the VPS, with all profiles.
+    name: Full stack (compose smoke)
+    needs: images # rebuilds from the images' warm caches
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Free disk space (four images + the dev image)
+        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+      - name: Runtime stages
+        id: target
+        run: |
+          for svc in docs renderer egress; do
+            if grep -qiE '^FROM[[:space:]].*[[:space:]]AS[[:space:]]+runtime[[:space:]]*$' "services/$svc/Dockerfile"; then
+              echo "$svc=runtime" >>"$GITHUB_OUTPUT"
+            else
+              echo "$svc=" >>"$GITHUB_OUTPUT"
+            fi
+          done
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - name: heypdf
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          target: runtime
+          tags: heypdf-ci/heypdf:test
+          load: true
+          provenance: false
+          labels: |
+            org.opencontainers.image.revision=${{ github.sha }}
+          build-args: |
+            HEYP_VERSION=ci
+            HEYP_REVISION=${{ github.sha }}
+          cache-from: type=gha,scope=heypdf-amd64
+      - name: heypdf-docs
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: services/docs
+          target: ${{ steps.target.outputs.docs }}
+          tags: heypdf-ci/heypdf-docs:test
+          load: true
+          provenance: false
+          cache-from: type=gha,scope=heypdf-docs-amd64
+      - name: heypdf-renderer
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: services/renderer
+          target: ${{ steps.target.outputs.renderer }}
+          tags: heypdf-ci/heypdf-renderer:test
+          load: true
+          provenance: false
+          cache-from: type=gha,scope=heypdf-renderer-amd64
+      - name: heypdf-egress
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: services/egress
+          target: ${{ steps.target.outputs.egress }}
+          tags: heypdf-ci/heypdf-egress:test
+          load: true
+          provenance: false
+          cache-from: type=gha,scope=heypdf-egress-amd64
+      - name: heypdf:dev (for pytest -m services)
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          target: dev
+          tags: heypdf:dev
+          load: true
+          provenance: false
+          cache-from: type=gha,scope=dev-amd64
+      - name: Start the stack and check it from the outside
+        run: .github/scripts/stack-smoke.sh heypdf-ci test
+
+  codeql:
+    name: CodeQL (${{ matrix.language }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [python, javascript-typescript, actions]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: github/codeql-action/init@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none
+          queries: security-extended
+      - uses: github/codeql-action/analyze@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
+        with:
+          category: /language:${{ matrix.language }}
+
+  dependency-review:
+    name: Dependency review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          fail-on-severity: high
+          comment-summary-in-pr: never
+
+  ci-ok:
+    name: CI OK
+    if: ${{ always() }}
+    needs: [lint, zizmor, test-python, test-ui, test-services, images, stack, codeql, dependency-review]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Every job passed (or was skipped)
+        env:
+          RESULTS: ${{ toJSON(needs.*.result) }}
+        run: |
+          echo "$RESULTS"
+          if grep -qE '"(failure|cancelled)"' <<<"$RESULTS"; then exit 1; fi

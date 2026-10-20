@@ -1,0 +1,20 @@
+# ruff 0.17 (pinned in .github/workflows/ci.yml). The repo's style is 120-column lines.
+line-length = 120
+target-version = "py312"
+
+[lint]
+# ruff 0.17's default rule set is much broader than "E4, E7, E9, F"; start from the classic core, which the
+# code base passes, and widen it (I, UP, B, …) in follow-up PRs together with the fixes.
+select = ["E4", "E7", "E9", "F"]
+
+[lint.per-file-ignores]
+# pytest fixtures are imported from shared modules and then requested by name as test arguments.
+"tests/**" = ["F811"]
+"services/*/tests/**" = ["F811"]
+# Package __init__ modules re-export names.
+"**/__init__.py" = ["F401"]
+
+[format]
+# Not enforced yet: adopt it with one `ruff format .` commit of its own (listed in .git-blame-ignore-revs), then add
+# `ruff format --check` to the lint job in .github/workflows/ci.yml.
+quote-style = "preserve"

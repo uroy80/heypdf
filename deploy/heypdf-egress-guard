@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+# heypdf-egress-guard — host firewall rules for the egress proxy's network (optional defence in depth).
+#
+#   heypdf-egress-guard apply | remove | status
+#
+# In compose.prod.yml the renderer (Chromium, fetching user-supplied URLs) has no route anywhere except the egress
+# proxy, and the proxy itself refuses private/reserved destinations and this server's public IPs. These rules repeat
+# that at the host level, in case the proxy has a bug: traffic from the egress-wan subnet (HEYP_EGRESS_SUBNET,
+# default 172.31.254.0/24)
+#   - to private, shared, loopback, link-local (cloud metadata), multicast and reserved ranges is rejected in
+#     DOCKER-USER (Docker's hook for user rules in FORWARD), except DNS to this host's own upstream resolvers;
+#   - to this host itself (any of its addresses, i.e. other services' ports) is rejected in INPUT.
+# Installed by bootstrap-vps.sh --egress-guard as /usr/local/sbin/heypdf-egress-guard + heypdf-egress-guard.service
+# (After/PartOf docker.service), so the rules come back after reboots and Docker restarts. IPv4 only: the heypdf
+# networks are IPv4-only (no enable_ipv6), so the proxy has no IPv6 route at all. Its chain (HEYPDF-EGRESS) and subnet
+# are its own, so heyp's guard on the same server is unaffected.
+set -euo pipefail
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+ENV_FILE=${HEYP_ENV_FILE:-/etc/heypdf/heypdf.env}
+SUBNET=$(sed -n 's/^[[:space:]]*HEYP_EGRESS_SUBNET=//p' "$ENV_FILE" 2>/dev/null | tail -n1 | tr -d "\"' ")
+SUBNET=${SUBNET:-172.31.254.0/24}
+[[ "$SUBNET" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}/[0-9]{1,2}$ ]] || { echo "bad HEYP_EGRESS_SUBNET: $SUBNET" >&2; exit 64; }
+CHAIN=HEYPDF-EGRESS
+BLOCKED="0.0.0.0/8 10.0.0.0/8 100.64.0.0/10 127.0.0.0/8 169.254.0.0/16 172.16.0.0/12 192.0.0.0/24 192.0.2.0/24 192.88.99.0/24 192.168.0.0/16 198.18.0.0/15 198.51.100.0/24 203.0.113.0/24 224.0.0.0/4 240.0.0.0/4"
+
+ipt() { iptables -w 10 "$@"; }
+
+resolvers() {
+  # The upstream DNS servers Docker's embedded resolver forwards to (systemd-resolved's list when it is in use).
+  local f
+  for f in /run/systemd/resolve/resolv.conf /etc/resolv.conf; do
+    if [ -r "$f" ]; then
+      awk '$1 == "nameserver" && $2 ~ /^[0-9]+(\.[0-9]+){3}$/ && $2 !~ /^127\./ {print $2}' "$f"
+      return 0
+    fi
+  done
+}
+
+remove() {
+  while ipt -C DOCKER-USER -s "$SUBNET" -j "$CHAIN" 2>/dev/null; do ipt -D DOCKER-USER -s "$SUBNET" -j "$CHAIN"; done
+  while ipt -C INPUT -s "$SUBNET" -j REJECT --reject-with icmp-admin-prohibited 2>/dev/null; do
+    ipt -D INPUT -s "$SUBNET" -j REJECT --reject-with icmp-admin-prohibited
+  done
+  if ipt -nL "$CHAIN" >/dev/null 2>&1; then ipt -F "$CHAIN"; ipt -X "$CHAIN"; fi
+}
+
+apply() {
+  # DOCKER-USER exists once dockerd has started; wait for it (the unit runs right after docker.service).
+  local ns
+  for _ in $(seq 1 30); do ipt -nL DOCKER-USER >/dev/null 2>&1 && break; sleep 1; done
+  ipt -nL DOCKER-USER >/dev/null 2>&1 || { echo "DOCKER-USER chain missing — is Docker running?" >&2; exit 1; }
+  remove
+  ipt -N "$CHAIN"
+  ipt -A "$CHAIN" -m conntrack --ctstate ESTABLISHED,RELATED -j RETURN
+  for ns in $(resolvers); do
+    ipt -A "$CHAIN" -d "$ns/32" -p udp --dport 53 -j RETURN
+    ipt -A "$CHAIN" -d "$ns/32" -p tcp --dport 53 -j RETURN
+  done
+  for net in $BLOCKED; do
+    ipt -A "$CHAIN" -d "$net" -j REJECT --reject-with icmp-admin-prohibited
+  done
+  ipt -A "$CHAIN" -j RETURN
+  ipt -I DOCKER-USER 1 -s "$SUBNET" -j "$CHAIN"
+  ipt -I INPUT 1 -s "$SUBNET" -j REJECT --reject-with icmp-admin-prohibited
+  echo "heypdf-egress-guard: $SUBNET may reach the public internet only"
+}
+
+case "${1:-}" in
+  apply) apply ;;
+  remove)
+    remove
+    echo "heypdf-egress-guard: rules removed"
+    ;;
+  status)
+    ipt -S DOCKER-USER | grep -F -- "$CHAIN" || true
+    ipt -S "$CHAIN" 2>/dev/null || echo "no $CHAIN chain"
+    ipt -S INPUT | grep -F -- "$SUBNET" || true
+    ;;
+  *)
+    echo "usage: $0 apply|remove|status" >&2
+    exit 64
+    ;;
+esac

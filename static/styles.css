@@ -1,0 +1,798 @@
+/* heypdf — editorial design tokens ("Broadsheet").
+   A newspaper contents page for documents: newsprint paper, true black ink, one editorial red.
+   Fonts are self-hosted OFL files in ./fonts (no CDNs).
+   Light = day paper, dark = night ink. The dateline carries the date and one factual line from /api/config. */
+
+/* ── type: 3 families, 5 files, 207 KB ───────────────────────────────── */
+
+@font-face {
+  font-family: "Fraunces";
+  src: url("fonts/fraunces-latin-opsz-normal.woff2") format("woff2");
+  font-weight: 100 900; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Fraunces";
+  src: url("fonts/fraunces-latin-opsz-italic.woff2") format("woff2");
+  font-weight: 100 900; font-style: italic; font-display: swap;
+}
+@font-face {
+  font-family: "Libre Franklin";
+  src: url("fonts/libre-franklin-latin-wght-normal.woff2") format("woff2");
+  font-weight: 100 900; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("fonts/ibm-plex-mono-latin-400-normal.woff2") format("woff2");
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("fonts/ibm-plex-mono-latin-500-normal.woff2") format("woff2");
+  font-weight: 500; font-style: normal; font-display: swap;
+}
+
+/* the server-side text fonts (app/assets/fonts, Bitstream Vera licence — see /credits), served by GET
+   /api/assets/fonts/{id}.ttf, so text previews on a page match the PDF. Loaded only when used. */
+@font-face { font-family: "DejaVu Sans"; src: url("/api/assets/fonts/dejavu_sans.ttf") format("truetype"); font-display: swap; }
+@font-face { font-family: "DejaVu Serif"; src: url("/api/assets/fonts/dejavu_serif.ttf") format("truetype"); font-display: swap; }
+
+:root {
+  /* ── colour: paper + ink + one red ─────────────────────────────────── */
+  --paper:       #f4efe4;   /* newsprint — page and options column      */
+  --sheet:       #fbf8f1;   /* coated stock — inputs, cards, toasts     */
+  --canvas:      #e9e3d6;   /* page well behind a rendered PDF page     */
+  --ink:         #141210;   /* true black ink — text, thick rules, CTA  */
+  --ink-2:       #3b372f;   /* standfirsts, secondary copy              */
+  --muted:       #625c51;   /* labels, captions, hints (5.8:1)          */
+  --rule:        #cfc7b6;   /* decorative hairline (dividers only)      */
+  --line:        #8b8374;   /* control boundary — inputs, boxes (3.3:1) */
+  --accent:      #b4141b;   /* editorial red — kickers, active, marks   */
+  --on-ink:      #f4efe4;   /* text on ink / accent fills               */
+  --danger:      #b4141b;   /* = accent; errors always carry text/icon  */
+  --warn:        #8a5200;   /* ochre ink — notices                       */
+  --success:     #2d6a3a;   /* green ink — "met target" ticks only      */
+  --focus:       #b4141b;   /* the editor's red pencil                  */
+
+  /* derived tints (mixes keep themes in sync) */
+  --hover:       color-mix(in srgb, var(--ink) 6%, transparent);
+  --press:       color-mix(in srgb, var(--ink) 11%, transparent);
+  --warn-wash:   color-mix(in srgb, var(--warn) 9%, var(--paper));
+  --danger-wash: color-mix(in srgb, var(--danger) 8%, var(--sheet));
+  --scrim:       rgb(20 18 16 / 0.42);
+
+  /* ── type ──────────────────────────────────────────────────────────── */
+  --font-display: "Fraunces", "Iowan Old Style", Georgia, "Times New Roman", serif;
+  --font-ui:      "Libre Franklin", "Franklin Gothic Book", ui-sans-serif, -apple-system, "Segoe UI", Arial, sans-serif;
+  --font-mono:    "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* scale (px, 1.25 minor-third-ish, tuned for a dense tool) */
+  --fs-nameplate: 46px;   /* masthead wordmark                  */
+  --fs-display:   64px;   /* empty-state front-page headline     */
+  --fs-h1:        32px;   /* tool headline                       */
+  --fs-lede:      16px;   /* standfirst (serif italic)            */
+  --fs-body:      14px;   /* UI text                              */
+  --fs-small:     12.5px; /* labels, hints                         */
+  --fs-kicker:    10.5px; /* small caps / letterspaced labels      */
+
+  --lh-tight: 1.05;
+  --lh-body:  1.5;
+  --track-kicker: 0.14em;
+  --track-caps:   0.08em;
+
+  /* optical sizes for Fraunces (opsz axis 9–144) */
+  --opsz-nameplate: 144;
+  --opsz-display:   144;
+  --opsz-head:      72;
+  --opsz-text:      14;
+
+  /* ── space ─────────────────────────────────────────────────────────── */
+  --gutter: 24px;           /* page margin                         */
+  --col-gap: 28px;          /* space either side of a column rule  */
+
+  /* ── rules ─────────────────────────────────────────────────────────── */
+  --hair:  1px;   /* hairline                          */
+  --thick: 3px;   /* nameplate / export head rule      */
+
+  /* ── shape ─────────────────────────────────────────────────────────── */
+  --radius-1: 1px;
+  --radius-2: 2px;   /* inputs, buttons (barely softened) */
+
+  /* ── elevation (minimal: print has no shadows) ─────────────────────── */
+  --shadow-2: 0 2px 0 rgb(20 18 16 / 0.08), 0 12px 32px rgb(20 18 16 / 0.12);
+
+  /* ── motion ────────────────────────────────────────────────────────── */
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --t: 160ms;
+
+  /* ── layout ────────────────────────────────────────────────────────── */
+  --nameplate-h: 62px;
+  --dateline-h: 28px;       /* includes its thick (3) + hairline (1) rules */
+  --topbar-h: calc(var(--nameplate-h) + var(--dateline-h));
+
+  /* theme-dependent copy (decorative only) */
+  color-scheme: light;
+}
+
+/* ── dark: night ink ──────────────────────────────────────────── */
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper:   #141311;
+    --sheet:   #1c1a17;
+    --canvas:  #0d0c0b;
+    --ink:     #efe9dc;
+    --ink-2:   #d3ccbd;
+    --muted:   #a49d8f;
+    --rule:    #38342e;
+    --line:    #78705f;
+    --accent:  #ff5e52;
+    --on-ink:  #141311;
+    --danger:  #ff5e52;
+    --warn:    #e7a94a;
+    --success: #7fc48b;
+    --focus:   #ff5e52;
+    --scrim:   rgb(0 0 0 / 0.6);
+    --shadow-2: 0 2px 0 rgb(0 0 0 / 0.5), 0 12px 32px rgb(0 0 0 / 0.5);
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --paper:   #141311;
+  --sheet:   #1c1a17;
+  --canvas:  #0d0c0b;
+  --ink:     #efe9dc;
+  --ink-2:   #d3ccbd;
+  --muted:   #a49d8f;
+  --rule:    #38342e;
+  --line:    #78705f;
+  --accent:  #ff5e52;
+  --on-ink:  #141311;
+  --danger:  #ff5e52;
+  --warn:    #e7a94a;
+  --success: #7fc48b;
+  --focus:   #ff5e52;
+  --scrim:   rgb(0 0 0 / 0.6);
+  --shadow-2: 0 2px 0 rgb(0 0 0 / 0.5), 0 12px 32px rgb(0 0 0 / 0.5);
+  color-scheme: dark;
+}
+
+/* heypdf — editorial ("Broadsheet") component styles: the masthead, buttons, form controls, notes, toasts and
+   dialogs shared by every page. pdf.css (loaded after this file) lays out the contents page and the tool pages. */
+
+/* ── base ─────────────────────────────────────────────────────────────── */
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--paper);
+  color: var(--ink);
+  font: 400 var(--fs-body)/var(--lh-body) var(--font-ui);
+  font-feature-settings: "kern", "liga";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, p, ul, dl, dd, figure { margin: 0; }
+ul { padding: 0; list-style: none; }
+button, input, select, textarea { font: inherit; color: inherit; letter-spacing: inherit; }
+button { cursor: pointer; }
+button:disabled { cursor: not-allowed; }
+img, svg { display: block; }
+.icon { flex: none; }
+[hidden] { display: none !important; }
+
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+::selection { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+
+.no-anim *, .no-anim *::before, .no-anim *::after { transition: none !important; }
+
+.sr-only {
+  position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+.skip-link {
+  position: absolute; left: var(--gutter); top: -48px; z-index: 100;
+  padding: 8px 12px; background: var(--ink); color: var(--on-ink);
+  font-weight: 600; text-decoration: none; transition: top var(--t);
+}
+.skip-link:focus { top: 8px; }
+
+.muted { color: var(--muted); }
+.break { overflow-wrap: anywhere; }
+
+kbd {
+  display: inline-grid; place-items: center;
+  min-width: 20px; height: 20px; padding: 0 5px;
+  border: 1px solid var(--line); border-bottom-width: 2px; border-radius: var(--radius-2);
+  background: var(--sheet); color: var(--ink);
+  font: 500 11px/1 var(--font-mono);
+}
+
+* { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--ink) 30%, transparent) transparent; }
+
+/* shared typographic roles */
+.kicker,
+.group-title,
+.tool-kicker,
+.dz-kicker,
+.dateline {
+  font-family: var(--font-ui);
+  font-size: var(--fs-kicker);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: var(--track-kicker);
+  text-transform: uppercase;
+}
+
+/* ── masthead (header.topbar) ─────────────────────────────────────────── */
+/* Nameplate centred between two "ears"; dateline between a thick and a thin rule. */
+
+.topbar {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-rows: var(--nameplate-h) auto;
+  align-items: center;
+  margin: 0 var(--gutter);
+  background: var(--paper);
+}
+
+.brand {
+  grid-column: 2; grid-row: 1;
+  display: inline-flex; align-items: center;
+  color: var(--ink); text-decoration: none;
+  padding: 0 6px;
+}
+.wordmark {
+  font-family: var(--font-display);
+  font-size: var(--fs-nameplate);
+  font-weight: 760;
+  font-variation-settings: "opsz" var(--opsz-nameplate);
+  letter-spacing: -0.035em;
+  line-height: 1;
+  transform: translateY(-2px);
+}
+.brand:hover .wordmark { color: var(--accent); }
+
+.topbar-actions {
+  grid-column: 3; grid-row: 1; justify-self: end;
+  display: flex; align-items: center; gap: 2px;
+}
+
+/* left ear — the "Auto-delete" badge from /api/config (stays in .topbar-actions in the DOM) */
+.local-pill {
+  position: absolute; left: 0; top: calc(var(--nameplate-h) / 2); transform: translateY(-50%);
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 6px 9px 6px 8px;
+  border: 1px solid var(--ink);
+  color: var(--ink);
+  font: 700 var(--fs-kicker)/1 var(--font-ui); letter-spacing: var(--track-kicker); text-transform: uppercase;
+  cursor: help;
+}
+.local-pill::before {
+  content: ""; width: 8px; height: 4px; margin-top: -3px;
+  border-left: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+}
+
+/* NEW — dateline row: <p class="dateline">…</p> as the last child of .topbar */
+.dateline {
+  grid-column: 1 / -1; grid-row: 2;
+  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 16px;
+  height: var(--dateline-h);
+  border-top: var(--thick) solid var(--ink);
+  border-bottom: var(--hair) solid var(--ink);
+  color: var(--ink);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+}
+.dateline > * { overflow: hidden; text-overflow: ellipsis; }
+.dateline-edition { min-width: 0; }
+.dateline-mid { color: var(--muted); }
+.dateline-date { justify-self: end; }
+
+/* ── buttons ──────────────────────────────────────────────────────────── */
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  height: 36px; padding: 0 14px;
+  border: 1px solid var(--ink); border-radius: var(--radius-2);
+  background: transparent; color: var(--ink);
+  font: 600 13px/1 var(--font-ui); letter-spacing: 0.01em; white-space: nowrap;
+  transition: background-color var(--t), border-color var(--t), color var(--t);
+}
+.btn:hover:not(:disabled) { background: var(--hover); }
+.btn:active:not(:disabled) { background: var(--press); }
+.btn:disabled { border-color: var(--line); color: var(--muted); opacity: 0.75; }
+.btn[aria-pressed="true"] { background: var(--ink); color: var(--on-ink); }
+.btn[aria-pressed="true"]:hover:not(:disabled) { background: color-mix(in srgb, var(--ink) 86%, var(--paper)); }
+
+.btn-primary { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
+.btn-primary:hover:not(:disabled) { background: var(--accent); border-color: var(--accent); color: var(--on-ink); }
+.btn-primary:active:not(:disabled) { background: color-mix(in srgb, var(--accent) 80%, var(--ink)); }
+.btn-primary:disabled { background: var(--rule); border-color: var(--rule); color: var(--muted); opacity: 1; }
+
+.btn-ghost { border-color: transparent; background: transparent; }
+.btn-ghost:hover:not(:disabled) { background: var(--hover); }
+.btn-block { width: 100%; height: 46px; font-size: 14.5px; }
+
+.btn-row { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* masthead "All tools": a boxed text button */
+.add-btn { border-color: var(--ink); height: 34px; padding: 0 12px 0 10px; margin-right: 6px; }
+.add-btn.btn-ghost { border-color: var(--ink); }
+
+.icon-btn {
+  display: inline-grid; place-items: center;
+  width: 36px; height: 36px; padding: 0;
+  border: 0; border-radius: var(--radius-2);
+  background: transparent; color: var(--ink);
+  transition: background-color var(--t), color var(--t);
+}
+.icon-btn:hover { background: var(--hover); }
+
+.link-btn {
+  padding: 0; border: 0; background: none;
+  color: var(--accent); font: 600 12.5px/1.3 var(--font-ui);
+  text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px;
+  justify-self: start; align-self: flex-start;
+}
+.link-btn:hover { text-decoration-thickness: 2px; }
+
+.spinner {
+  display: inline-block; width: 14px; height: 14px;
+  border: 1.5px solid currentColor; border-right-color: transparent; border-radius: 50%;
+  animation: spin 0.7s linear infinite; opacity: 0.8;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@keyframes slide { from { transform: translateX(-100%); } to { transform: translateX(300%); } }
+
+/* ── dropzone: a tool page before its files arrive ───────────────────── */
+
+.dropzone {
+  position: absolute; inset: 0;
+  display: grid; place-items: center;
+  border: 1px dashed var(--line);
+  cursor: pointer;
+  transition: border-color var(--t), background-color var(--t);
+}
+.dropzone:hover { border-color: var(--ink); background: color-mix(in srgb, var(--sheet) 70%, transparent); }
+.dz-inner {
+  display: grid; justify-items: center;
+  width: min(620px, 100%); padding: 40px 32px;
+  text-align: center;
+}
+/* NEW */ .dz-kicker {
+  display: flex; align-items: center; gap: 14px; width: 100%;
+  margin-bottom: 26px; color: var(--accent);
+}
+.dz-kicker::before, .dz-kicker::after { content: ""; flex: 1; border-top: 1px solid var(--ink); }
+.dz-title {
+  font: 600 var(--fs-display)/0.98 var(--font-display);
+  font-variation-settings: "opsz" var(--opsz-display);
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+/* NEW */ .dz-lede {
+  max-width: 34em; margin-top: 18px;
+  color: var(--ink-2);
+  font: italic 400 18px/1.45 var(--font-display);
+  font-variation-settings: "opsz" 18;
+  text-wrap: pretty;
+}
+.dz-sub {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px 16px;
+  margin-top: 30px; color: var(--muted); font-size: 13.5px;
+}
+.dz-sub .btn { height: 46px; padding: 0 26px; font-size: 14.5px; }
+.dz-or kbd { margin: 0 1px; }
+.dz-formats {
+  width: 100%; margin-top: 34px; padding-top: 14px;
+  border-top: 1px solid var(--rule);
+  color: var(--muted);
+  font: 400 11.5px/1.6 var(--font-mono); letter-spacing: 0.04em; text-transform: uppercase;
+  text-wrap: balance;
+}
+.dz-privacy {
+  display: inline-flex; align-items: center; gap: 7px; margin-top: 10px;
+  color: var(--ink); font: 600 12.5px/1 var(--font-ui);
+}
+.dz-privacy .icon { color: var(--success); }
+.warning {
+  display: flex; align-items: flex-start; gap: 7px;
+  color: var(--warn); font: 500 12.5px/1.45 var(--font-ui);
+}
+.warning .icon { margin-top: 2px; }
+
+.upload-bar {
+  display: flex; align-items: center; gap: 12px;
+  color: var(--ink-2); font: 400 12px/1.3 var(--font-mono);
+}
+.upload-track { position: relative; flex: 0 1 180px; height: 3px; background: var(--rule); overflow: hidden; }
+.upload-fill {
+  position: absolute; inset: 0; background: var(--ink);
+  transform-origin: left center; transform: scaleX(0.02);
+  transition: transform 200ms linear;
+}
+
+/* header.tool-head = kicker / headline / standfirst */
+.tool-head {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px; align-items: baseline;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--ink);
+}
+/* NEW */ .tool-kicker { grid-column: 1; grid-row: 1; margin-bottom: 12px; color: var(--accent); }
+.tool-head .link-btn {
+  grid-column: 2; grid-row: 1;
+  font: 700 var(--fs-kicker)/1 var(--font-ui); letter-spacing: var(--track-kicker); text-transform: uppercase;
+  text-underline-offset: 2px;
+}
+.tool-title {
+  grid-column: 1 / -1;
+  font: 600 var(--fs-h1)/var(--lh-tight) var(--font-display);
+  font-variation-settings: "opsz" var(--opsz-head);
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+.tool-desc {
+  grid-column: 1 / -1; margin-top: 10px;
+  color: var(--ink-2);
+  font: italic 400 var(--fs-lede)/1.42 var(--font-display);
+  font-variation-settings: "opsz" var(--opsz-text);
+  text-wrap: pretty;
+}
+
+.group { display: grid; gap: 14px; min-width: 0; }
+.group-title { display: flex; align-items: center; gap: 10px; color: var(--ink); }
+.group-title::after { content: ""; flex: 1; border-top: 1px solid var(--rule); }
+.stack-sm { display: grid; gap: 8px; min-width: 0; }
+
+/* ── fields ───────────────────────────────────────────────────────────── */
+
+.field { display: grid; gap: 6px; min-width: 0; }
+.label { color: var(--ink-2); font: 500 var(--fs-small)/1.3 var(--font-ui); }
+.field-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.hint { color: var(--muted); font: 400 12.5px/1.45 var(--font-ui); text-wrap: pretty; }
+
+.input {
+  width: 100%; height: 38px; padding: 0 12px;
+  border: 1px solid var(--line); border-radius: var(--radius-2);
+  background: var(--sheet); color: var(--ink);
+  font: 400 14px/1 var(--font-ui);
+  transition: border-color var(--t), outline-color var(--t);
+}
+.input:hover:not(:disabled) { border-color: var(--ink); }
+.input:focus { outline: 2px solid var(--focus); outline-offset: 1px; border-color: var(--ink); }
+.input::placeholder { color: var(--muted); opacity: 1; }
+/* words in the box are set in italic serif, so a hint never reads as a value */
+.input:not([type="number"])::placeholder { font: italic 400 14.5px/1 var(--font-display); font-variation-settings: "opsz" 14; }
+.input:disabled { background: transparent; border-style: dashed; color: var(--muted); }
+/* NEW (forward-compatible) — invalid value */
+.input[aria-invalid="true"] { border-color: var(--danger); background: var(--danger-wash); box-shadow: inset 3px 0 0 var(--danger); }
+.field-error { display: flex; gap: 6px; color: var(--danger); font: 500 12px/1.4 var(--font-ui); }
+
+input[type="number"].input, .input-mono { font: 400 13.5px/1 var(--font-mono); }
+input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.input-search { padding-left: 12px; }
+input[type="search"]::-webkit-search-decoration { -webkit-appearance: none; }
+/* the native clear "×" is system blue: redraw it as a muted ink cross that matches the chip ×es */
+input[type="search"]::-webkit-search-cancel-button {
+  -webkit-appearance: none; appearance: none;
+  width: 14px; height: 14px; margin-left: 8px; cursor: pointer;
+  background: var(--muted);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 3.5l9 9m0-9l-9 9' stroke='black' stroke-width='1.6' fill='none'/%3E%3C/svg%3E") center / 12px 12px no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 3.5l9 9m0-9l-9 9' stroke='black' stroke-width='1.6' fill='none'/%3E%3C/svg%3E") center / 12px 12px no-repeat;
+}
+input[type="search"]::-webkit-search-cancel-button:hover { background: var(--ink); }
+
+.input-wrap { position: relative; }
+.input-wrap:has(.suffix) .input { padding-right: 48px; }
+.suffix {
+  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+  color: var(--muted); font: 500 10.5px/1 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase;
+  pointer-events: none;
+}
+
+.select-wrap { position: relative; }
+.select { appearance: none; -webkit-appearance: none; padding-right: 36px; cursor: pointer; text-overflow: ellipsis; }
+.select-wrap .icon { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: var(--ink); pointer-events: none; }
+
+/* segmented control: a ruled table of choices; the choice is printed in reverse */
+.seg { margin: 0; padding: 0; border: 0; min-width: 0; }
+.seg > legend { padding: 0; margin-bottom: 7px; }
+.seg-row {
+  display: grid; grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr));
+  padding: 0 1px 1px 0;
+}
+.seg-opt { position: relative; display: block; min-width: 0; margin: 0 -1px -1px 0; }
+.seg-opt input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; z-index: 1; }
+.seg-opt input:disabled { cursor: not-allowed; }
+.seg-opt span {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  height: 36px; padding: 0 6px;
+  border: 1px solid var(--line);
+  background: var(--sheet); color: var(--ink);
+  font: 500 13px/1 var(--font-ui);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  transition: background-color var(--t), color var(--t);
+  pointer-events: none;
+}
+.seg-opt:hover input:not(:disabled):not(:checked) + span { background: color-mix(in srgb, var(--ink) 7%, var(--sheet)); }
+.seg-opt input:checked + span {
+  position: relative; z-index: 1;
+  border-color: var(--ink); background: var(--ink); color: var(--on-ink); font-weight: 650;
+}
+.seg-opt input:focus-visible + span { position: relative; z-index: 2; outline: 2px solid var(--focus); outline-offset: 2px; }
+.seg-opt input:disabled + span {
+  color: var(--muted); background: transparent;
+  text-decoration: line-through; text-decoration-color: var(--line);
+}
+
+/* switch: a square, printed toggle */
+.switch-field { display: grid; gap: 3px; }
+.switch { position: relative; display: inline-flex; align-items: center; gap: 11px; cursor: pointer; justify-self: start; min-height: 24px; }
+.switch input { position: absolute; opacity: 0; width: 36px; height: 20px; margin: 0; cursor: pointer; }
+.track {
+  position: relative; flex: none; width: 36px; height: 20px;
+  border: 1.5px solid var(--ink); border-radius: 0;
+  background: var(--sheet);
+  transition: background-color var(--t);
+}
+.track::after {
+  content: ""; position: absolute; top: 2.5px; left: 2.5px; width: 12px; height: 12px;
+  background: var(--muted);
+  transition: transform var(--t), background-color var(--t);
+}
+.switch input:checked + .track { background: var(--ink); }
+.switch input:checked + .track::after { transform: translateX(16px); background: var(--on-ink); }
+.switch:hover input:not(:checked):not(:disabled) + .track { background: color-mix(in srgb, var(--ink) 8%, var(--sheet)); }
+.switch input:focus-visible + .track { outline: 2px solid var(--focus); outline-offset: 2px; }
+.switch-label { font: 500 13.5px/1.3 var(--font-ui); }
+.switch-field .hint { padding-left: 47px; }
+
+/* slider: a printer's ruler — ticks every 10 %, ink fill, a bar-shaped thumb */
+.slider .field-row { min-height: 20px; }
+.slider-meta { display: inline-flex; align-items: center; gap: 4px; }
+.slider-val {
+  min-width: 3ch; text-align: right;
+  color: var(--ink); font: 500 12.5px/1 var(--font-mono); font-variant-numeric: tabular-nums;
+}
+.range {
+  --p: 50%;
+  --ticks:
+    linear-gradient(var(--line), var(--line)) 0 50% / 100% 1px no-repeat,
+    linear-gradient(var(--line), var(--line)) 50% 0 / 1px 50% no-repeat,
+    linear-gradient(var(--line), var(--line)) 100% 3px / 1px calc(50% - 3px) no-repeat,
+    repeating-linear-gradient(90deg, var(--line) 0 1px, transparent 1px 10%) 0 3px / 100% calc(50% - 3px) no-repeat;
+  width: 100%; height: 24px; margin: 0; background: transparent; cursor: pointer;
+  -webkit-appearance: none; appearance: none;
+}
+.range:focus-visible { outline: none; }
+.range::-webkit-slider-runnable-track {
+  height: 18px;
+  background: linear-gradient(var(--ink), var(--ink)) 0 50% / var(--p) 2px no-repeat, var(--ticks);
+}
+.range::-moz-range-track { height: 18px; background: var(--ticks); }
+.range::-moz-range-progress { height: 2px; background: var(--ink); }
+.range::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 8px; height: 18px; margin-top: 0; border: 0; border-radius: 0;
+  background: var(--ink);
+  box-shadow: 0 0 0 2px var(--paper);
+  transition: background-color var(--t), box-shadow var(--t);
+}
+.range::-moz-range-thumb {
+  width: 8px; height: 18px; border: 0; border-radius: 0; background: var(--ink);
+  box-shadow: 0 0 0 2px var(--paper);
+}
+.range:hover::-webkit-slider-thumb { background: var(--accent); }
+.range:hover::-moz-range-thumb { background: var(--accent); }
+.range:active::-webkit-slider-thumb { background: var(--accent); }
+.range:focus-visible::-webkit-slider-thumb { background: var(--accent); box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--focus); }
+.range:focus-visible::-moz-range-thumb { background: var(--accent); box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--focus); }
+.range:disabled { cursor: not-allowed; opacity: 0.5; }
+
+/* quick chips: 20 KB · 50 KB · … — mono figures in ruled boxes */
+.qchips { display: flex; flex-wrap: wrap; gap: 6px; }
+.qchip {
+  height: 28px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 0;
+  background: var(--sheet); color: var(--ink);
+  font: 500 12px/1 var(--font-mono); font-variant-numeric: tabular-nums;
+  transition: border-color var(--t), background-color var(--t), color var(--t);
+}
+.qchip:hover { border-color: var(--ink); }
+.qchip[aria-pressed="true"] { border-color: var(--ink); background: var(--ink); color: var(--on-ink); }
+
+/* notes: an editor's note with a margin rule */
+.note {
+  display: flex; align-items: flex-start; gap: 9px;
+  padding: 9px 12px 10px;
+  border-left: 2px solid var(--ink);
+  background: var(--sheet);
+  font: 400 13px/1.45 var(--font-ui);
+}
+.note .icon { margin-top: 2px; color: var(--ink); }
+.note-warn { border-left-color: var(--warn); background: var(--warn-wash); }
+.note-warn .icon { color: var(--warn); }
+
+/* disclosure: "Advanced" as a ruled subhead with a +/– */
+.disclosure { border-top: 1px solid var(--ink); }
+.disclosure > summary {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 0 2px; cursor: pointer; list-style: none;
+  color: var(--ink);
+  font: 700 var(--fs-kicker)/1 var(--font-ui); letter-spacing: var(--track-kicker); text-transform: uppercase;
+}
+.disclosure > summary::-webkit-details-marker { display: none; }
+.disclosure > summary::after { content: "+"; font: 400 17px/1 var(--font-mono); letter-spacing: 0; margin-right: 2px; }
+.disclosure[open] > summary::after { content: "–"; }
+.disclosure > summary:hover { color: var(--accent); }
+.disclosure[open] > summary { margin-bottom: 16px; }
+
+/* ── overlays: drop veil, toasts, dialog ──────────────────────────────── */
+
+.dropveil {
+  position: fixed; inset: 0; z-index: 60;
+  background: color-mix(in srgb, var(--paper) 80%, transparent);
+  pointer-events: none;
+  animation: fade 120ms var(--ease);
+}
+.dropveil-inner {
+  position: absolute; inset: var(--gutter);
+  display: grid; place-items: center;
+  border: 2px dashed var(--ink);
+  color: var(--ink);
+  font: italic 500 44px/1 var(--font-display); font-variation-settings: "opsz" 96; letter-spacing: -0.02em;
+}
+@keyframes fade { from { opacity: 0; } }
+
+/* toasts are printed in reverse: ink slip, paper type, centred at the foot of the window */
+.toasts {
+  position: fixed; left: 50%;
+  bottom: 22px; z-index: 70;
+  display: grid; gap: 8px;
+  width: min(480px, calc(100vw - 32px));
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.toast {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 12px 8px 12px 14px;
+  border: 0; border-radius: 0;
+  background: var(--ink); color: var(--on-ink);
+  box-shadow: var(--shadow-2);
+  font: 500 13.5px/1.45 var(--font-ui);
+  pointer-events: auto;
+  animation: rise 200ms var(--ease);
+  transition: opacity 180ms, transform 180ms;
+}
+.toast p { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.toast > .icon { margin-top: 2px; }
+.toast-warn p::before, .toast-error p::before {
+  margin-right: 8px;
+  font: 700 var(--fs-kicker)/1 var(--font-ui); letter-spacing: var(--track-kicker); text-transform: uppercase;
+}
+.toast-warn p::before { content: "Notice"; }
+.toast-error { box-shadow: inset 4px 0 0 var(--accent), var(--shadow-2); padding-left: 18px; }
+.toast-error p::before { content: "Error"; }
+.toast.is-leaving { opacity: 0; transform: translateY(6px); }
+.toast-x {
+  display: grid; place-items: center; width: 24px; height: 24px; padding: 0; margin: -2px 0;
+  border: 0; border-radius: 0; background: none; color: inherit; opacity: 0.75;
+}
+.toast-x:hover { opacity: 1; background: color-mix(in srgb, var(--on-ink) 14%, transparent); }
+.toast :focus-visible { outline-color: var(--on-ink); }
+@keyframes rise { from { opacity: 0; transform: translateY(8px); } }
+
+.dialog {
+  width: min(460px, calc(100vw - 32px)); padding: 0;
+  border: 1px solid var(--ink); border-top: var(--thick) solid var(--ink); border-radius: 0;
+  background: var(--paper); color: var(--ink);
+  box-shadow: var(--shadow-2);
+}
+.dialog::backdrop { background: var(--scrim); }
+.dialog[open] { animation: rise 180ms var(--ease); }
+.dialog-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 12px 12px 22px; border-bottom: 1px solid var(--ink); }
+.dialog-head h2 { font: 600 22px/1.1 var(--font-display); font-variation-settings: "opsz" 48; letter-spacing: -0.01em; }
+
+.noscript { padding: 24px; text-align: center; font-family: var(--font-display); }
+
+/* ── responsive ───────────────────────────────────────────────────────── */
+
+/* short desktop windows: the dateline (it carries the heyp · heypdf switch) one notch shorter */
+@media (max-height: 760px) and (min-width: 781px) {
+  :root { --dateline-h: 22px; }
+}
+
+/* narrow desktop: tighter column gaps */
+@media (max-width: 1180px) {
+  :root { --col-gap: 22px; }
+  .dateline-mid:not(.sibling) { display: none; }
+}
+
+/* phones: the masthead sticks to the top, the dateline keeps the app switch */
+@media (max-width: 780px) {
+  :root { --gutter: 16px; --nameplate-h: 54px; --fs-nameplate: 36px; --dateline-h: 25px; --col-gap: 0px; }
+  .topbar { position: sticky; top: 0; z-index: 20; margin: 0; padding: 0 var(--gutter); }
+  .local-pill { left: var(--gutter); padding: 5px 7px 5px 6px; font-size: 9.5px; letter-spacing: 0.1em; }
+  .dateline { grid-template-columns: auto minmax(0, 1fr); font-size: 9.5px; letter-spacing: 0.1em; }
+  .dateline-edition { display: none; }
+  .dateline-mid:not(.sibling) { display: none; }
+  .sibling { justify-content: flex-start; }
+  .sibling-what { display: none; }
+  .dz-inner { padding: 28px 20px; }
+  .dz-kicker { margin-bottom: 20px; }
+  .dz-title { font-size: 44px; }
+  .dz-lede { font-size: 16px; margin-top: 14px; }
+  .dz-sub { margin-top: 24px; }
+  .dz-formats { margin-top: 24px; }
+  .tool-title { font-size: 28px; }
+}
+
+@media (max-width: 480px) {
+  .add-btn { width: 36px; padding: 0; margin-right: 0; }
+}
+
+/* small phones: the ear would run into the nameplate; the page itself still states the deletion times */
+@media (max-width: 400px) {
+  .local-pill { display: none; }
+}
+
+/* touch: grow the small targets to ≥ 32 px */
+@media (pointer: coarse) {
+  .qchip { height: 34px; padding: 0 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important; animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important; scroll-behavior: auto !important;
+  }
+  .spinner { animation: spin 1.6s linear infinite !important; animation-duration: 1.6s !important; animation-iteration-count: infinite !important; }
+}
+
+@media (forced-colors: active) {
+  .seg-opt input:checked + span, .qchip[aria-pressed="true"], .btn[aria-pressed="true"] { forced-color-adjust: none; background: Highlight; color: HighlightText; }
+}
+
+/* the ":)" in the nameplate — set in the editor's red, a touch lighter so the name still leads */
+.wordmark .smile {
+  color: var(--accent);
+  font-weight: 560;
+  letter-spacing: -0.06em;
+  white-space: nowrap;
+}
+.brand:hover .wordmark .smile { color: var(--ink); }
+
+/* the dateline's middle cell: the heyp · heypdf switch (heyp is a separate site, HEYP_SIBLING_URL) */
+.sibling { display: inline-flex; align-items: baseline; justify-content: center; gap: 9px; overflow: visible; color: var(--ink); }
+.sibling-what { font: italic 500 12px/1 var(--font-display); letter-spacing: 0.02em; color: var(--muted); text-transform: none; }
+.sibling-link {
+  padding: 4px 0;
+  color: var(--muted); text-decoration: none;
+  font: 700 var(--fs-kicker)/1 var(--font-ui); letter-spacing: var(--track-kicker); text-transform: uppercase;
+}
+.sibling-link:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 4px; }
+.sibling-link[aria-current="page"] { color: var(--ink); box-shadow: inset 0 -2px 0 var(--accent); }
+.sibling-dot { color: var(--accent); font-weight: 700; }
+
+/* the masthead ear and the dateline line come from /api/config (masthead.js); nothing is printed until it has answered */
+.local-pill:empty { display: none; }
+.copy-pending .dateline-edition, .copy-unknown .dateline-edition { visibility: hidden; }
+/* until /api/config has said which kind of instance this is, no privacy claim is printed */
+.copy-pending .local-pill, .copy-pending .dz-privacy, .copy-pending .dz-lede { visibility: hidden; }
+.copy-unknown .local-pill { display: none; }
+.dz-privacy a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+
+/* a dialog taller than the window scrolls */
+.dialog { max-height: calc(100dvh - 48px); overflow-y: auto; }

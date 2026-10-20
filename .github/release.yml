@@ -1,0 +1,17 @@
+# Categories for GitHub's generated release notes (gh release create --generate-notes), by PR label.
+changelog:
+  exclude:
+    labels: [skip-changelog]
+  categories:
+    - title: New tools and features
+      labels: [feature, enhancement]
+    - title: Fixes
+      labels: [bug, fix]
+    - title: Security
+      labels: [security]
+    - title: Deployment and CI
+      labels: [ci, deploy, infra]
+    - title: Dependencies
+      labels: [dependencies] # Dependabot adds this label to its PRs
+    - title: Other changes
+      labels: ["*"]

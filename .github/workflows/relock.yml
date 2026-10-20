@@ -1,0 +1,53 @@
+# Dependabot bumps the top-level pins in requirements*.txt but cannot regenerate the hash-locked *.lock files
+# (scripts/lock.sh for the app, services/lock.sh for the service images; uv inside the pinned base image). This job
+# does it on Dependabot's own pip PRs and pushes the result to the PR branch. Pushes made with GITHUB_TOKEN start the
+# PR's CI in an "approval required" state: approve the run in the PR's Checks tab (or close/reopen the PR).
+name: Relock
+
+on:
+  pull_request:
+    paths:
+      - requirements.txt
+      - requirements-dev.txt
+      - services/*/requirements*.txt
+
+permissions: {}
+
+concurrency:
+  group: relock-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  relock:
+    # Only Dependabot's pip PRs from this repository (a fork cannot create a PR as dependabot[bot]).
+    if: >-
+      github.event.pull_request.user.login == 'dependabot[bot]' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      startsWith(github.event.pull_request.head.ref, 'dependabot/pip/')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: write # push the regenerated lock files to the PR branch
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Regenerate the locks
+        run: |
+          scripts/lock.sh
+          services/lock.sh
+      - name: Push them to the Dependabot branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          mapfile -t locks < <(git ls-files -- 'requirements*.lock' 'services/*/requirements*.lock')
+          if git diff --quiet -- "${locks[@]}"; then
+            echo "locks already up to date"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "deps: regenerate requirements locks" -- "${locks[@]}"
+          git push "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:refs/heads/${BRANCH}"

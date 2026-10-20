@@ -1,0 +1,5 @@
+# Test tooling for the dev image (top level, human-edited). The image installs requirements-dev.lock;
+# regenerate it with scripts/lock.sh after editing this file.
+-r requirements.txt
+pytest==9.1.1
+httpx==0.28.1

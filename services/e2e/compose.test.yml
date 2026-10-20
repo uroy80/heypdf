@@ -1,0 +1,107 @@
+# SSRF test bed for heypdf-renderer + heypdf-egress (CI: services job; locally: services/e2e/run.sh).
+# Networks model the production threat: the renderer's only neighbour is the egress proxy; the egress proxy CAN
+# physically reach "internal" services (corp, imds) so only its policy stops it. The tester plays the heypdf app
+# and reaches the renderer ONLY through the Unix socket volume.
+name: heypdf-e2e
+x-hardening: &hardening
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: ["no-new-privileges:true"]
+networks:
+  sandbox:   # renderer <-> egress only. isolated: the HOST gets no address on this bridge
+    internal: true
+    driver_opts: {com.docker.network.bridge.gateway_mode_ipv4: isolated}
+    ipam: {config: [{subnet: 172.31.70.0/24}]}
+  fakenet: {internal: true, ipam: {config: [{subnet: 11.11.11.0/24}]}}    # simulated public internet
+  corp:    {internal: true, ipam: {config: [{subnet: 172.31.50.0/24}]}}   # internal services
+  imds:                                                                    # cloud metadata v4 + v6
+    internal: true
+    enable_ipv6: true
+    ipam: {config: [{subnet: 169.254.169.0/24, gateway: 169.254.169.1}, {subnet: "fd00:ec2::/64"}]}
+  logs:    {internal: true, ipam: {config: [{subnet: 172.31.80.0/24}]}}   # tester reads target hit logs
+volumes:
+  rsock: {}
+services:
+  egress:
+    image: ${EGRESS_IMAGE:-heypdf-egress:dev}
+    <<: *hardening
+    environment:
+      HEYP_EGRESS_SECRET: e2e-test-secret-0123456789
+      HEYP_EGRESS_MAX_JOB_BYTES: "20000000"
+      HEYP_EGRESS_DENY_LOCAL_NETS: "0"  # 11.11.11.0/24 ("the internet") is directly attached in the test bed
+      HEYP_EGRESS_POLICY: ${EGRESS_POLICY:-enforce}
+    dns: [11.11.11.53]
+    networks:
+      sandbox: {ipv4_address: 172.31.70.2}
+      fakenet: {ipv4_address: 11.11.11.2}
+      corp: {ipv4_address: 172.31.50.2}
+      imds: {ipv4_address: 169.254.169.2, ipv6_address: "fd00:ec2::2"}
+    mem_limit: 256m
+    pids_limit: 64
+  renderer:
+    image: ${RENDERER_IMAGE:-heypdf-renderer:dev}
+    <<: *hardening
+    environment:
+      HOME: /tmp
+      HEYP_RENDER_SOCKET: /run/renderer/r.sock
+      HEYP_RENDER_EGRESS_HOST: egress
+      HEYP_RENDER_EGRESS_SECRET: e2e-test-secret-0123456789
+      HEYP_RENDER_POLICY: ${EGRESS_POLICY:-enforce}
+      HEYP_RENDER_LOOPBACK_CANARY: "9999"
+      HEYP_RENDER_MAX_CONCURRENT: "2"
+      HEYP_RENDER_MAX_QUEUE: "3"
+      HEYP_RENDER_CHROMIUM_SANDBOX: ${RENDER_CHROMIUM_SANDBOX:-0}
+      HEYP_RENDER_DISABLE_L3: ${RENDER_DISABLE_L3:-0}
+      HEYP_RENDER_EXTRA_ARGS: ${RENDER_EXTRA_ARGS:-}
+      HEYP_RENDER_PROXY_BYPASS: ${RENDER_PROXY_BYPASS-<-loopback>}
+      PLAYWRIGHT_DISABLE_FORCED_CHROMIUM_PROXIED_LOOPBACK: ${PW_NO_FORCED_LOOPBACK:-}
+      HEYP_RENDER_NO_RESOLVER_RULES: ${RENDER_NO_RESOLVER_RULES:-0}
+    volumes: [rsock:/run/renderer]
+    tmpfs: ["/tmp:size=512m,mode=1777"]
+    networks: {sandbox: {ipv4_address: 172.31.70.3}}
+    mem_limit: 2g
+    cpus: 2
+    pids_limit: 512
+    depends_on: [egress]
+  web:
+    build: ./targets
+    image: heypdf-e2e-targets:dev
+    command: [web]
+    networks: {fakenet: {ipv4_address: 11.11.11.10}, logs: {}}
+  dns:
+    image: heypdf-e2e-targets:dev
+    command: [dns]
+    networks: {fakenet: {ipv4_address: 11.11.11.53}, logs: {}}
+  secret-app:
+    image: heypdf-e2e-targets:dev
+    command: [secret]
+    networks: {corp: {ipv4_address: 172.31.50.10}, logs: {}}
+  metadata:
+    image: heypdf-e2e-targets:dev
+    command: [secret]
+    networks: {imds: {ipv4_address: 169.254.169.254, ipv6_address: "fd00:ec2::254"}, logs: {}}
+  udp-sink:   # deliberately ON the sandbox network: worst case "something UDP-reachable next to Chromium"
+    image: heypdf-e2e-targets:dev
+    command: [udp]
+    networks: {sandbox: {ipv4_address: 172.31.70.20}, logs: {}}
+  tester:     # plays the heypdf app: talks to the renderer ONLY over the Unix socket
+    image: ${TESTER_IMAGE:-heypdf-renderer:test}
+    user: "10001"
+    working_dir: /e2e
+    entrypoint: ["sleep", "infinity"]
+    environment:
+      PYTHONDONTWRITEBYTECODE: "1"
+      HOME: /tmp
+      EGRESS_POLICY: ${EGRESS_POLICY:-enforce}
+      RENDER_DISABLE_L3: ${RENDER_DISABLE_L3:-0}
+      CONTROL: ${CONTROL:-}
+    volumes: ["rsock:/run/renderer", "./tests:/e2e:ro"]
+    networks: [logs]
+  probe:      # "compromised renderer": raw sockets to the egress proxy (profile: probe)
+    image: ${TESTER_IMAGE:-heypdf-renderer:test}
+    profiles: [probe]
+    working_dir: /e2e
+    entrypoint: ["python", "-m", "pytest", "-q", "-p", "no:cacheprovider", "--tb=short", "--noconftest"]
+    environment: {PYTHONDONTWRITEBYTECODE: "1", HOME: /tmp}
+    volumes: ["./tests:/e2e:ro"]
+    networks: [sandbox, logs]

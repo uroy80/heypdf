@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+node_modules/
+.DS_Store
+.env
+.env.*
+!.env.example
+models/
+tests/output/
+*.log
+.work/

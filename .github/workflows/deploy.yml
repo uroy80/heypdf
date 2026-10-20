@@ -1,0 +1,222 @@
+# Deploy a published commit to the production VPS over SSH (called by release.yml after every main build,
+# or run by hand: Actions → Deploy → Run workflow → a commit SHA, branch or v* tag; an older one = rollback).
+#
+# The server side is deploy/heypdf-deploy, pinned as the forced command of the CI key: this job can only ask it
+# to deploy a commit that is on main (or tagged v*), roll back, or report status. Secrets and variables live
+# in the "production" environment (add required reviewers there for a manual approval gate). Without them
+# the job ends green with a notice, so forks and fresh clones never fail on deploy.
+# Variables: HEYPDF_URL (https://<HEYP_DOMAIN>, e.g. https://heypdf.edgr.in; checked: /api/health, /, /privacy).
+# See deploy/DEPLOY.md §3 for the full list.
+name: Deploy
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: Commit to deploy
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Commit SHA, branch or v* tag to deploy (an older commit = rollback)
+        required: true
+        default: main
+        type: string
+
+permissions: {}
+
+jobs:
+  deploy:
+    name: Deploy to production
+    runs-on: ubuntu-24.04
+    # Job-level so it also applies when release.yml calls this workflow: one deploy at a time, queued, never
+    # cancelled half-way (the server additionally holds a lock).
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    timeout-minutes: 30
+    environment:
+      name: production
+      url: ${{ vars.HEYPDF_URL }}
+    permissions:
+      contents: read
+      packages: read
+      attestations: read
+    env:
+      DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+      DEPLOY_PORT: ${{ vars.DEPLOY_PORT || '22' }}
+      DEPLOY_USER: ${{ vars.DEPLOY_USER || 'heypdf-deploy' }}
+      HEYPDF_URL: ${{ vars.HEYPDF_URL }}
+      IMAGES: heypdf heypdf-docs heypdf-renderer heypdf-egress # keep in sync with release.yml and deploy/compose.prod.yml
+    steps:
+      - name: Check the deploy configuration
+        id: cfg
+        env:
+          HAS_KEY: ${{ secrets.DEPLOY_SSH_KEY != '' }}
+          HAS_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS != '' }}
+        run: |
+          if [ "$HAS_KEY" = true ] && [ "$HAS_KNOWN_HOSTS" = true ] && [ -n "$DEPLOY_HOST" ]; then
+            echo "skip=false" >>"$GITHUB_OUTPUT"
+          else
+            echo "::notice title=Deploy skipped::The production environment lacks DEPLOY_HOST, DEPLOY_SSH_KEY or DEPLOY_KNOWN_HOSTS (see deploy/DEPLOY.md §3)."
+            echo "skip=true" >>"$GITHUB_OUTPUT"
+          fi
+
+      - name: Resolve the commit
+        if: steps.cfg.outputs.skip == 'false'
+        id: sha
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REF: ${{ inputs.ref }}
+        run: |
+          [[ "$REF" =~ ^[A-Za-z0-9._/-]{1,200}$ ]] || { echo "::error::invalid ref"; exit 1; }
+          sha=$(gh api "repos/$GITHUB_REPOSITORY/commits/$REF" --jq .sha)
+          [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::cannot resolve $REF"; exit 1; }
+          echo "sha=$sha" >>"$GITHUB_OUTPUT"
+          echo "Deploying \`$sha\` ($REF)" >>"$GITHUB_STEP_SUMMARY"
+
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        if: steps.cfg.outputs.skip == 'false'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify the images' provenance
+        if: steps.cfg.outputs.skip == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ steps.sha.outputs.sha }}
+        run: |
+          # Only images built by this repository's release workflow on GitHub-hosted runners, from this commit.
+          for image in $IMAGES; do
+            built_from=$(gh attestation verify "oci://ghcr.io/uroy80/$image:sha-$SHA" \
+              --repo "$GITHUB_REPOSITORY" \
+              --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release.yml" \
+              --deny-self-hosted-runners \
+              --format json \
+              --jq '[.[].verificationResult.statement.predicate.buildDefinition.resolvedDependencies[].digest.gitCommit] | unique | join(",")')
+            [ "$built_from" = "$SHA" ] || { echo "::error::$image:sha-$SHA was built from '$built_from'"; exit 1; }
+            echo "verified ghcr.io/uroy80/$image:sha-$SHA"
+          done
+
+      - name: Configure SSH (pinned host key)
+        if: steps.cfg.outputs.skip == 'false'
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" >~/.ssh/heypdf_deploy
+          chmod 600 ~/.ssh/heypdf_deploy
+          printf '%s\n' "$KNOWN_HOSTS" >~/.ssh/heypdf_known_hosts
+          {
+            echo "Host prod"
+            echo "  HostName $DEPLOY_HOST"
+            echo "  Port $DEPLOY_PORT"
+            echo "  User $DEPLOY_USER"
+            echo "  IdentityFile ~/.ssh/heypdf_deploy"
+            echo "  IdentitiesOnly yes"
+            echo "  UserKnownHostsFile ~/.ssh/heypdf_known_hosts"
+            echo "  StrictHostKeyChecking yes"
+            echo "  BatchMode yes"
+            echo "  ConnectTimeout 20"
+            echo "  ServerAliveInterval 15"
+            echo "  ServerAliveCountMax 8"
+          } >~/.ssh/config
+          ssh prod version
+
+      - name: Deploy (server rolls back by itself if the new release is unhealthy)
+        if: steps.cfg.outputs.skip == 'false'
+        env:
+          PROD_ENV: ${{ secrets.PROD_ENV }}
+          SHA: ${{ steps.sha.outputs.sha }}
+        run: |
+          rc=0
+          # shellcheck disable=SC2029 # $SHA is meant to expand here; the server validates it
+          printf '%s\n' "$PROD_ENV" | ssh prod deploy "$SHA" || rc=$?
+          case $rc in
+            0) echo "::notice::deployed $SHA" ;;
+            2) echo "::error::$SHA was unhealthy on the server; it rolled back to the previous release"; exit 1 ;;
+            *) echo "::error::deploy of $SHA failed (exit $rc); see the log above"; exit 1 ;;
+          esac
+
+      - name: Public health check
+        if: steps.cfg.outputs.skip == 'false'
+        id: health
+        env:
+          SHA: ${{ steps.sha.outputs.sha }}
+        run: |
+          check() {
+            local url=$1 body
+            for _ in $(seq 1 20); do
+              # Accept a "revision" field when the app reports one; it must then be this commit.
+              if body=$(curl -fsS --max-time 10 "$url/api/health") &&
+                 jq -e --arg sha "$SHA" '.status == "ok" and ((.revision // $sha) == $sha)' <<<"$body" >/dev/null; then
+                echo "healthy: $url"
+                return 0
+              fi
+              sleep 6
+            done
+            echo "::error::$url/api/health is not healthy"
+            return 1
+          }
+          page() {
+            local url=$1
+            for _ in $(seq 1 10); do
+              if curl -fsSL --max-time 10 --max-redirs 3 -o /dev/null "$url"; then
+                echo "ok: $url"
+                return 0
+              fi
+              sleep 6
+            done
+            echo "::error::$url does not load"
+            return 1
+          }
+          if [ -z "$HEYPDF_URL" ]; then
+            echo "::notice::HEYPDF_URL is not set; skipping the public check"
+            exit 0
+          fi
+          ok=0
+          check "$HEYPDF_URL" || ok=1
+          page "$HEYPDF_URL/" || ok=1
+          page "$HEYPDF_URL/privacy" || ok=1
+          exit "$ok"
+
+      # /privacy promises no cookies and no scripts from other companies. A CDN in front of the server can break
+      # that without any change here (Cloudflare: Bot Fight Mode or challenges set cookies; Email Address
+      # Obfuscation, Rocket Loader, Web Analytics and Zaraz inject /cdn-cgi/ scripts — deploy/DEPLOY.md §9).
+      # Fails the run so the owner sees it, but does not roll back: the release is not the cause.
+      - name: Privacy claims hold on the public site
+        if: steps.cfg.outputs.skip == 'false' && env.HEYPDF_URL != ''
+        run: |
+          ok=0
+          for path in / /merge /privacy; do
+            url="$HEYPDF_URL$path"
+            if ! curl -fsS --max-time 10 -D headers.txt -o body.html "$url"; then
+              echo "::error::$url does not load"; ok=1; continue
+            fi
+            if grep -qi '^set-cookie:' headers.txt; then
+              echo "::error::$url sets a cookie ($(grep -i '^set-cookie:' headers.txt | cut -d= -f1 | head -n1)); /privacy says there are none"
+              ok=1
+            fi
+            if grep -q '/cdn-cgi/' body.html; then
+              echo "::error::$url contains a /cdn-cgi/ script injected by the CDN; /privacy says no third-party scripts"
+              ok=1
+            fi
+          done
+          rm -f headers.txt body.html
+          exit "$ok"
+
+      - name: Roll back (public check failed)
+        if: failure() && steps.health.outcome == 'failure'
+        run: ssh prod rollback
+
+      - name: Server status
+        if: always() && steps.cfg.outputs.skip == 'false'
+        run: ssh prod status || true
+
+      - name: Remove the key
+        if: always()
+        run: rm -f ~/.ssh/heypdf_deploy

@@ -1,0 +1,291 @@
+#!/usr/bin/env bash
+# heypdf-deploy — the only program the CI deploy key can run on the VPS.
+#
+# Installed root-owned at /usr/local/sbin/heypdf-deploy by deploy/bootstrap-vps.sh and wired as a forced command:
+#   ~heypdf-deploy/.ssh/authorized_keys:  restrict,command="/usr/local/sbin/heypdf-deploy" ssh-ed25519 AAAA… heypdf-ci
+# so a leaked CI key cannot open a shell, forward ports or run anything else.
+#
+#   heypdf-deploy deploy <sha> [--keep-ci-env]  deploy that commit (must be on the deploy branch or carry a v* tag)
+#   heypdf-deploy rollback              redeploy the previous successful release
+#   heypdf-deploy status                current/previous release and container health
+#   heypdf-deploy version               wrapper protocol version
+#
+# deploy:
+#   1. fetches the public repo into a local bare mirror and checks the commit is an ancestor of the deploy
+#      branch (or is a v* tag) — compose files therefore only ever come from reviewed history, never from CI;
+#   2. extracts deploy/ of that commit into releases/<sha>/ and writes release.env (HEYP_TAG=sha-<sha>);
+#   3. KEY=VALUE lines on stdin (from the PROD_ENV secret) are accepted only for HEYP_* keys with plain
+#      values and REPLACE state/ci.env; no lines (the secret is empty or deleted) delete state/ci.env, so removing
+#      HEYP_ANTHROPIC_API_KEY from PROD_ENV turns the AI tools off and removes the key from this server. Run by the
+#      owner in a terminal, or with --keep-ci-env (only accepted outside the CI key), ci.env is left as it is;
+#   4. docker compose pull (nothing changes if it fails), then up -d --remove-orphans --wait;
+#   5. checks every heypdf container runs an image whose org.opencontainers.image.revision label is <sha>;
+#   6. on failure after step 4 it brings the previous release back and exits 2; with no previous release, 1.
+# Exit codes: 0 ok · 1 failed (nothing to roll back to, or nothing changed) · 2 failed and rolled back · 64 usage.
+set -Eeuo pipefail
+umask 027
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+PROTOCOL=1
+CONF=${HEYP_DEPLOY_CONF:-/etc/heypdf/deploy.conf}
+
+# --- configuration (root-owned file; defaults below) --------------------------------------------------
+REPO_URL=https://github.com/uroy80/heypdf.git
+BRANCH=main
+BASE=/srv/heypdf
+ENV_FILE=/etc/heypdf/heypdf.env
+PROJECT=heypdf
+REGISTRY=ghcr.io/uroy80
+KEEP_RELEASES=5
+WAIT_TIMEOUT=300
+PULL_RETRIES=3
+if [ -r "$CONF" ]; then
+  # shellcheck source=/dev/null
+  . "$CONF"
+fi
+# Every heypdf image carries org.opencontainers.image.source=<the repository>; pruning is limited to those, so images
+# of other projects on a shared server are never touched.
+IMAGE_SOURCE=${IMAGE_SOURCE:-${REPO_URL%.git}}
+KEEP_CI_ENV=0
+
+STATE=$BASE/state
+RELEASES=$BASE/releases
+MIRROR=$BASE/repo.git
+LOG=$STATE/deploy.log
+
+log() { printf '%s heypdf-deploy: %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*" | tee -a "$LOG" >&2; }
+die() { log "error: $1"; exit "${2:-1}"; }
+usage() { sed -n '8,11p' "$0" >&2; exit 64; }
+
+# --- arguments: from SSH_ORIGINAL_COMMAND under the forced command, else argv (owner on the box) -------
+if [ -n "${SSH_ORIGINAL_COMMAND:-}" ]; then
+  read -r -a ARGS <<<"$SSH_ORIGINAL_COMMAND"
+else
+  ARGS=("$@")
+fi
+[ "${#ARGS[@]}" -ge 1 ] || usage
+CMD=${ARGS[0]}
+
+mkdir -p "$STATE" "$RELEASES"
+touch "$LOG"
+
+compose() {
+  # $1 = release dir; the rest goes to docker compose. COMPOSE_FILE / COMPOSE_PROFILES come from ENV_FILE
+  # (compose reads them from --env-file; relative COMPOSE_FILE paths resolve against the cwd, hence the cd).
+  # Later env files win: heypdf.env < ci.env < release.env. The environment is cleared because shell
+  # variables would override every env file.
+  local rel=$1
+  shift
+  local args=(--project-name "$PROJECT" --env-file "$ENV_FILE")
+  [ -f "$STATE/ci.env" ] && args+=(--env-file "$STATE/ci.env")
+  args+=(--env-file "$rel/release.env")
+  grep -qE '^[[:space:]]*COMPOSE_FILE=' "$ENV_FILE" || args+=(-f compose.prod.yml)
+  (cd "$rel" && env -i PATH="$PATH" HOME="$HOME" ${DOCKER_CONFIG:+DOCKER_CONFIG="$DOCKER_CONFIG"} \
+    docker compose "${args[@]}" "$@")
+}
+
+# Prints the recorded sha plus a newline (empty line if none), so several calls can be piped together.
+read_state() { if [ -f "$STATE/$1" ]; then tr -cd '0-9a-f' <"$STATE/$1"; fi; echo; }
+
+verify_running() {
+  # Every service built from our registry must run the image of this commit (catches stale containers).
+  local rel=$1 sha=$2 ids id line image revision bad=0
+  ids=$(compose "$rel" ps -q)
+  [ -n "$ids" ] || { log "no containers running"; return 1; }
+  for id in $ids; do
+    line=$(docker inspect --format '{{.Config.Image}} {{index .Config.Labels "org.opencontainers.image.revision"}} {{.State.Status}} {{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$id")
+    image=${line%% *}
+    case "$image" in
+      "$REGISTRY"/*)
+        revision=$(cut -d' ' -f2 <<<"$line")
+        if [ "$revision" != "$sha" ]; then
+          log "container $id runs $image built from '${revision:-?}', expected $sha"
+          bad=1
+        fi
+        ;;
+    esac
+    case "$line" in
+      *" running healthy" | *" running none") ;;
+      *) log "container $id not healthy: $line"; bad=1 ;;
+    esac
+  done
+  return "$bad"
+}
+
+up() {
+  # $1 release dir, $2 sha, $3 "pull" (default) or "local" (rollback: use the images still on disk, pull
+  # only what is missing, so a registry outage cannot block a rollback).
+  # A failed pull leaves the running release untouched (return 3).
+  local rel=$1 sha=$2 mode=${3:-pull} i
+  if [ "$mode" = pull ]; then
+    for i in $(seq 1 "$PULL_RETRIES"); do
+      if compose "$rel" pull --quiet; then break; fi
+      [ "$i" = "$PULL_RETRIES" ] && { log "pull failed for $sha"; return 3; }
+      sleep $((i * 10))
+    done
+  fi
+  compose "$rel" up -d --pull missing --remove-orphans --wait --wait-timeout "$WAIT_TIMEOUT" \
+    || { log "up --wait failed for $sha"; return 1; }
+  verify_running "$rel" "$sha" || return 1
+}
+
+record() {
+  # $1 = sha now live. Keeps current/previous and prunes old releases and their images.
+  local sha=$1 old keep
+  old=$(read_state current)
+  if [ -n "$old" ] && [ "$old" != "$sha" ]; then echo "$old" >"$STATE/previous"; fi
+  echo "$sha" >"$STATE/current"
+  ln -sfn "$RELEASES/$sha" "$BASE/current"
+  printf '%s %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$sha" >>"$STATE/history"
+  keep=$( (read_state current; read_state previous; tac "$STATE/history" | cut -d' ' -f2) | awk 'NF && !seen[$0]++' | head -n "$KEEP_RELEASES")
+  for dir in "$RELEASES"/*; do
+    [ -d "$dir" ] || continue
+    if ! grep -qx "$(basename "$dir")" <<<"$keep"; then
+      docker image ls --format '{{.Repository}}:{{.Tag}}' | grep -E "^$REGISTRY/[a-z0-9-]+:sha-$(basename "$dir")\$" | xargs -r docker image rm >/dev/null 2>&1 || true
+      rm -rf "$dir"
+    fi
+  done
+  docker image prune -f --filter "label=org.opencontainers.image.source=$IMAGE_SOURCE" >/dev/null 2>&1 || true
+}
+
+fetch_release() {
+  # Verifies <sha> is on $BRANCH (or tagged v*) and extracts its deploy/ directory into releases/<sha>.
+  local sha=$1 rel=$RELEASES/$1 tmp
+  [ -d "$MIRROR" ] || git init --quiet --bare "$MIRROR"
+  git -C "$MIRROR" fetch --quiet --prune --no-tags "$REPO_URL" \
+    "+refs/heads/$BRANCH:refs/heads/$BRANCH" "+refs/tags/v*:refs/tags/v*" || die "git fetch $REPO_URL failed"
+  git -C "$MIRROR" cat-file -e "$sha^{commit}" 2>/dev/null || die "commit $sha is not on $BRANCH or a v* tag of $REPO_URL"
+  if ! git -C "$MIRROR" merge-base --is-ancestor "$sha" "refs/heads/$BRANCH" &&
+     [ -z "$(git -C "$MIRROR" tag --points-at "$sha" --list 'v*')" ]; then
+    die "commit $sha is not on $BRANCH or a v* tag of $REPO_URL"
+  fi
+  if [ ! -f "$rel/release.env" ]; then
+    tmp=$(mktemp -d "$RELEASES/.tmp.XXXXXX")
+    git -C "$MIRROR" archive --format=tar "$sha" deploy | tar -x -C "$tmp" --strip-components=1 --no-same-owner \
+      || die "commit $sha has no deploy/ directory"
+    [ -f "$tmp/compose.prod.yml" ] || die "commit $sha has no deploy/compose.prod.yml"
+    printf 'HEYP_TAG=sha-%s\nHEYP_REVISION=%s\nHEYP_REGISTRY=%s\n' "$sha" "$sha" "$REGISTRY" >"$tmp/release.env"
+    # Public files, bind-mounted into containers whose root has no CAP_DAC_OVERRIDE (cap_drop: ALL): they
+    # must be world-readable, or e.g. the renderer cannot read its seccomp profile.
+    chmod -R u=rwX,go=rX "$tmp"
+    rm -rf "$rel"
+    mv "$tmp" "$rel"
+  fi
+}
+
+read_ci_env() {
+  # KEY=VALUE lines on stdin replace state/ci.env; none at all delete it (step 3 above). A terminal on stdin (the
+  # owner on the box) or --keep-ci-env leaves the file alone.
+  local line n=0 out
+  if [ -t 0 ] || [ "$KEEP_CI_ENV" = 1 ]; then return 0; fi
+  out=$(mktemp "$STATE/.ci.env.XXXXXX")
+  chmod 600 "$out"
+  while IFS= read -r line || [ -n "$line" ]; do
+    line=${line%$'\r'}
+    case "$line" in '' | '#'*) continue ;; esac
+    if [[ ! "$line" =~ ^HEYP_[A-Z0-9_]{1,64}=[A-Za-z0-9_.,:/@%+=-]{0,512}$ ]]; then
+      rm -f "$out"
+      die "rejected env line after ${n} accepted: only HEYP_* keys with plain values are accepted" 64
+    fi
+    case "${line%%=*}" in
+      # Release identity and network/firewall settings stay under the server owner's control (heypdf.env only).
+      HEYP_TAG | HEYP_REVISION | HEYP_REGISTRY | HEYP_BIND | HEYP_EDGE_SUBNET | HEYP_EGRESS_SUBNET | \
+        HEYP_DOCS_SUBNET | HEYP_RENDER_SUBNET | \
+        HEYP_EGRESS_DENY_CIDRS | HEYP_TRUSTED_PROXIES | HEYP_PORT)
+        rm -f "$out"
+        die "rejected env key ${line%%=*}" 64
+        ;;
+    esac
+    printf '%s\n' "$line" >>"$out"
+    n=$((n + 1))
+  done
+  if [ "$n" -gt 0 ]; then
+    mv "$out" "$STATE/ci.env"
+    log "accepted $n env values from CI"
+  else
+    rm -f "$out"
+    if [ -f "$STATE/ci.env" ]; then
+      rm -f "$STATE/ci.env"
+      log "CI sent no env values; ci.env cleared"
+    fi
+  fi
+}
+
+do_deploy() {
+  local sha=$1 prev rc
+  [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || die "expected a full 40-hex commit sha" 64
+  read_ci_env
+  fetch_release "$sha"
+  prev=$(read_state current)
+  log "deploying $sha (previous: ${prev:-none})"
+  rc=0
+  up "$RELEASES/$sha" "$sha" || rc=$?
+  if [ "$rc" = 0 ]; then
+    record "$sha"
+    log "deployed $sha"
+    return 0
+  fi
+  if [ "$rc" = 3 ]; then
+    log "images for $sha not available; the running release was not touched"
+    exit 1
+  fi
+  compose "$RELEASES/$sha" ps --all >&2 || true
+  compose "$RELEASES/$sha" logs --no-color --tail 60 >&2 || true
+  if [ -n "$prev" ] && [ "$prev" != "$sha" ]; then
+    [ -f "$RELEASES/$prev/release.env" ] || fetch_release "$prev"
+    log "rolling back to $prev"
+    if up "$RELEASES/$prev" "$prev" local; then
+      ln -sfn "$RELEASES/$prev" "$BASE/current"
+      log "rolled back to $prev"
+      exit 2
+    fi
+    die "rollback to $prev failed too — check 'heypdf-deploy status' on the server"
+  fi
+  die "deploy of $sha failed and there is no previous release to return to"
+}
+
+do_rollback() {
+  local cur prev
+  cur=$(read_state current)
+  prev=$(read_state previous)
+  [ -n "$prev" ] || die "no previous release recorded"
+  [ -f "$RELEASES/$prev/release.env" ] || fetch_release "$prev"
+  log "rollback: $cur -> $prev"
+  up "$RELEASES/$prev" "$prev" local || die "rollback to $prev failed"
+  record "$prev"
+  log "rolled back to $prev"
+}
+
+# One deploy or rollback at a time (CI also serialises with a concurrency group).
+lock() {
+  exec 9>"$STATE/lock"
+  flock -w 900 9 || die "another deploy is still running"
+}
+
+do_status() {
+  local cur prev
+  cur=$(read_state current)
+  prev=$(read_state previous)
+  echo "current:  ${cur:-none}"
+  echo "previous: ${prev:-none}"
+  if [ -n "$cur" ] && [ -d "$RELEASES/$cur" ]; then
+    compose "$RELEASES/$cur" ps --format 'table {{.Service}}\t{{.Image}}\t{{.Status}}'
+  fi
+}
+
+case "$CMD" in
+  deploy)
+    # --keep-ci-env is for the owner on the box only: under the CI key, PROD_ENV is always the source of truth.
+    if [ "${#ARGS[@]}" = 3 ] && [ "${ARGS[2]}" = --keep-ci-env ] && [ -z "${SSH_ORIGINAL_COMMAND:-}" ]; then
+      KEEP_CI_ENV=1
+    elif [ "${#ARGS[@]}" != 2 ]; then
+      usage
+    fi
+    lock
+    do_deploy "${ARGS[1]}"
+    ;;
+  rollback) [ "${#ARGS[@]}" = 1 ] || usage; lock; do_rollback ;;
+  status) [ "${#ARGS[@]}" = 1 ] || usage; do_status ;;
+  version) echo "heypdf-deploy protocol $PROTOCOL" ;;
+  *) usage ;;
+esac

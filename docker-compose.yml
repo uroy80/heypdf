@@ -1,0 +1,155 @@
+# Local / self-hosted heypdf, built from this checkout.
+#
+#   docker compose up -d --build                          # app only: http://127.0.0.1:8081
+#   docker compose --profile docs up -d --build           # + Office <-> PDF, OCR, compression, PDF/A (no network)
+#   docker compose --profile docs --profile render up -d --build   # + HTML -> PDF (renderer + egress proxy)
+#
+# Tools whose service is not running report "available: false" in the UI. Public hosting uses
+# deploy/compose.prod.yml instead (published images, hosted mode, limits): see deploy/DEPLOY.md.
+name: heypdf
+
+x-logging: &logging
+  driver: local
+  options:
+    max-size: 10m
+    max-file: "3"
+
+services:
+  heypdf:
+    build:
+      context: .
+      target: runtime
+    image: heypdf:latest
+    container_name: heypdf
+    ports:
+      # Loopback only by default: heypdf has no authentication. To reach it from other devices on a
+      # trusted LAN, opt in with HEYP_BIND=0.0.0.0 (e.g. in .env). 8081 leaves 8080 to heyp.
+      - "${HEYP_BIND:-127.0.0.1}:${HEYP_PORT:-8081}:8080"
+    environment:
+      HEYP_MODE: "${HEYP_MODE:-local}"
+      # HEYP_MODE=hosted refuses to start without these (privacy policy, terms, scan QR links)
+      HEYP_PUBLIC_URL: "${HEYP_PUBLIC_URL:-}"
+      HEYP_OPERATOR_NAME: "${HEYP_OPERATOR_NAME:-}"
+      HEYP_OPERATOR_EMAIL: "${HEYP_OPERATOR_EMAIL:-}"
+      # heyp (the photo toolbox) for the "heyp · heypdf" switch; empty = http://localhost:8080, "off" = no switch
+      HEYP_SIBLING_URL: "${HEYP_SIBLING_URL:-}"
+      HEYP_MAX_UPLOAD_MB: "${HEYP_MAX_UPLOAD_MB:-100}"
+      HEYP_MAX_FILES: "${HEYP_MAX_FILES:-200}"
+      HEYP_MAX_PIXELS: "${HEYP_MAX_PIXELS:-50000000}"
+      HEYP_TTL_MINUTES: "${HEYP_TTL_MINUTES:-60}"
+      HEYP_HARD_TTL_MINUTES: "${HEYP_HARD_TTL_MINUTES:-}" # empty = automatic (off in local mode)
+      HEYP_MAX_JOBS: "${HEYP_MAX_JOBS:-2}"
+      HEYP_CACHE_MB: "${HEYP_CACHE_MB:-256}"
+      HEYP_ALLOW_CROSS_ORIGIN: "${HEYP_ALLOW_CROSS_ORIGIN:-0}"
+      HEYP_DOCS: "${HEYP_DOCS:-0}"
+      HEYP_TRUSTED_PROXIES: "${HEYP_TRUSTED_PROXIES:-127.0.0.1/32}"
+      HEYP_STATE_DIR: /var/lib/heypdf
+      HEYP_DOCS_URL: "http://docs:8080"
+      HEYP_RENDERER_SOCKET: /run/renderer/r.sock
+      # Optional AI tools (Summarize / Translate PDF): set ANTHROPIC_API_KEY in .env to turn them on.
+      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
+    # Memory budget: the process (~0.3 GB), the decoded-image cache (HEYP_CACHE_MB), whatever /tmp holds
+    # (RAM-backed, charged here) and the running jobs (PDF → Word / JPG and decoding large photos are the heaviest,
+    # up to ~1 GB each at the pixel limit). Over the limit only heypdf is OOM-killed (and restarted, wiping uploads).
+    mem_limit: "${HEYP_MEM_LIMIT:-3g}"
+    pids_limit: 512
+    read_only: true
+    tmpfs:
+      # Uploads (each <= HEYP_MAX_UPLOAD_MB) and results live here: 1g holds ten max-size uploads.
+      # When full, requests get 507, not an OOM kill.
+      - "/tmp:size=${HEYP_TMP_SIZE:-1g}"
+    volumes:
+      - state:/var/lib/heypdf # AI spend ledger (daily budget survives restarts)
+      - render-sock:/run/renderer
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    logging: *logging
+    restart: unless-stopped
+    networks: [default, docs-net]
+
+  docs:
+    profiles: [docs]
+    build:
+      context: services/docs
+      target: runtime
+    image: heypdf-docs:latest
+    environment:
+      HEYP_DOCS_SLOTS: "1"
+      HEYP_DOCS_AS_MB: "1024"
+    read_only: true
+    tmpfs:
+      - "/tmp:size=512m"
+    mem_limit: 1536m
+    pids_limit: 256
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    logging: *logging
+    restart: unless-stopped
+    networks: [docs-net]
+
+  renderer:
+    profiles: [render]
+    build:
+      context: services/renderer
+    image: heypdf-renderer:latest
+    environment:
+      HOME: /tmp
+      HEYP_RENDER_SOCKET: /run/renderer/r.sock
+      HEYP_RENDER_EGRESS_HOST: egress
+      HEYP_RENDER_EGRESS_SECRET: "${HEYP_EGRESS_SECRET:-heypdf-local-only-change-me}"
+      HEYP_RENDER_MAX_CONCURRENT: "1"
+      HEYP_RENDER_CHROMIUM_SANDBOX: "1"
+    read_only: true
+    tmpfs:
+      - "/tmp:size=512m,mode=1777"
+    volumes:
+      - render-sock:/run/renderer
+    mem_limit: 1536m
+    pids_limit: 512
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+      - seccomp=./deploy/seccomp/chromium-userns.json
+    logging: *logging
+    restart: unless-stopped
+    networks: [render-sbx]
+
+  egress:
+    profiles: [render]
+    build:
+      context: services/egress
+    image: heypdf-egress:latest
+    environment:
+      HEYP_EGRESS_SECRET: "${HEYP_EGRESS_SECRET:-heypdf-local-only-change-me}"
+      HEYP_EGRESS_SLOTS: "1"
+      HEYP_EGRESS_ALLOW_PORTS: "80,443"
+      HEYP_EGRESS_DENY_CIDRS: "${HEYP_EGRESS_DENY_CIDRS:-}"
+      HEYP_EGRESS_DENY_LOCAL_NETS: "1"
+      HEYP_EGRESS_LOG_HOSTS: "0" # never log capture destinations
+    read_only: true
+    mem_limit: 128m
+    pids_limit: 64
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    logging: *logging
+    restart: unless-stopped
+    networks: [render-sbx, egress-wan]
+
+networks:
+  default: {}
+  docs-net:
+    internal: true
+    driver_opts:
+      com.docker.network.bridge.gateway_mode_ipv4: isolated # Docker Engine >= 28
+  render-sbx:
+    internal: true
+    driver_opts:
+      com.docker.network.bridge.gateway_mode_ipv4: isolated
+  egress-wan: {}
+
+volumes:
+  state: {}
+  render-sock: {}

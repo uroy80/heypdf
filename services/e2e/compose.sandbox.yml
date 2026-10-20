@@ -1,0 +1,8 @@
+# Override: Chromium's own sandbox ON (non-root, cap_drop ALL, no-new-privileges) via the seccomp profile that is
+# Docker's default + unconditional clone/unshare/chroot (the production setting).
+services:
+  renderer:
+    environment:
+      HEYP_RENDER_CHROMIUM_SANDBOX: "1"
+    security_opt:   # merged with the base list (no-new-privileges stays)
+      - seccomp=../seccomp/chromium-userns.json

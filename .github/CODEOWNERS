@@ -1,0 +1,13 @@
+# Every change needs the owner's review (enable "Require review from Code Owners" on main).
+*                         @uroy80
+# Supply chain and production access: reviewed with extra care.
+/.github/                 @uroy80
+/deploy/                  @uroy80
+/Dockerfile               @uroy80
+/services/*/Dockerfile    @uroy80
+/requirements*.lock       @uroy80
+/services/*/requirements*.lock @uroy80
+# What the public is promised: the privacy policy and terms must stay true to the code.
+/legal/                   @uroy80
+/app/legal.py             @uroy80
+/LICENSE                  @uroy80

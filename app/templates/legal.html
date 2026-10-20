@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="referrer" content="no-referrer">
+  <meta name="description" content="{{description}}">
+  <title>{{title}} · heypdf :)</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/js/theme.js"></script>
+  <style>
+    /* Legal pages (app/templates/legal.html): the Broadsheet tokens from /styles.css, with fallbacks so the page
+       still reads as a newspaper notice if the stylesheet changes. Scoped to .lg-* classes. */
+    :root { color-scheme: light dark; }
+    body.lg-page {
+      margin: 0; min-height: 100dvh;
+      background: var(--paper, #f4efe4); color: var(--ink, #141210);
+      font: 400 15px/1.6 var(--font-ui, "Libre Franklin", system-ui, sans-serif);
+    }
+    .lg-page a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+    .lg-page a:hover { color: var(--accent, #b4141b); }
+    .lg-page :focus-visible { outline: 2px solid var(--focus, #b4141b); outline-offset: 2px; }
+    .lg-skip { position: absolute; left: 16px; top: -48px; padding: 8px 12px; background: var(--ink, #141210);
+      color: var(--on-ink, #f4efe4); font-weight: 600; z-index: 10; }
+    .lg-skip:focus { top: 8px; }
+    .lg-wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+
+    /* masthead: ears · nameplate · ears, then the dateline between a thick and a hairline rule */
+    .lg-masthead { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center;
+      min-height: 76px; gap: 12px; }
+    .lg-ear { font: 700 10.5px/1.2 var(--font-ui, sans-serif); letter-spacing: 0.14em; text-transform: uppercase; }
+    .lg-ear-right { justify-self: end; display: flex; gap: 10px; }
+    .lg-ear-right a { text-decoration: none; }
+    .lg-ear-right a[aria-current] { color: var(--accent, #b4141b); }
+    .lg-nameplate { font: 760 46px/1 var(--font-display, "Fraunces", Georgia, serif);
+      font-variation-settings: "opsz" 144; letter-spacing: -0.035em; text-decoration: none; }
+    .lg-nameplate .smile { color: var(--accent, #b4141b); font-weight: 560; letter-spacing: -0.06em; white-space: nowrap; }
+    .lg-dateline { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 16px;
+      align-items: center; min-height: 28px; border-top: 3px solid var(--ink, #141210);
+      border-bottom: 1px solid var(--ink, #141210); font: 600 10.5px/1.2 var(--font-ui, sans-serif);
+      letter-spacing: 0.12em; text-transform: uppercase; }
+    .lg-dateline > * { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .lg-dateline-mid { color: var(--muted, #625c51); text-align: center; }
+    .lg-dateline-right { justify-self: end; }
+
+    /* page: contents column + one readable text column */
+    .lg-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 0 44px; padding: 36px 0 56px; }
+    .lg-layout.lg-no-toc { grid-template-columns: minmax(0, 1fr); }
+    .lg-toc { position: sticky; top: 20px; align-self: start; max-height: calc(100dvh - 40px); overflow: auto;
+      border-top: 3px solid var(--ink, #141210); padding-top: 10px; }
+    .lg-kicker { margin: 0 0 8px; font: 700 10.5px/1.2 var(--font-ui, sans-serif); letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--accent, #b4141b); }
+    .lg-toc ol { margin: 0; padding: 0; list-style: none; counter-reset: toc; }
+    .lg-toc li { counter-increment: toc; border-bottom: 1px solid var(--rule, #cfc7b6); }
+    .lg-toc a { display: grid; grid-template-columns: 24px 1fr; padding: 7px 0; font-size: 13px; line-height: 1.35;
+      text-decoration: none; }
+    .lg-toc a::before { content: counter(toc); font: 500 11px/1.6 var(--font-mono, monospace); color: var(--muted, #625c51); }
+
+    .lg-body { max-width: 70ch; }
+    .lg-body > h1 { margin: 0 0 6px; font: 700 52px/1.02 var(--font-display, Georgia, serif);
+      font-variation-settings: "opsz" 144; letter-spacing: -0.03em; }
+    .lg-body > h1 + p { margin: 0 0 26px; padding-bottom: 14px; border-bottom: 1px solid var(--ink, #141210);
+      font: italic 400 16px/1.45 var(--font-display, Georgia, serif); color: var(--muted, #625c51); }
+    .lg-body h2 { margin: 38px 0 10px; padding-top: 10px; border-top: 1px solid var(--ink, #141210);
+      font: 650 26px/1.15 var(--font-display, Georgia, serif); font-variation-settings: "opsz" 72;
+      letter-spacing: -0.01em; scroll-margin-top: 16px; }
+    .lg-body h3 { margin: 26px 0 8px; font: 650 19px/1.2 var(--font-display, Georgia, serif); }
+    .lg-body p, .lg-body ul, .lg-body ol, .lg-body pre, .lg-body .lg-table { margin: 0 0 14px; }
+    .lg-body ul { padding-left: 1.2em; list-style: square; }
+    .lg-body ol { padding-left: 1.5em; list-style: decimal; }
+    .lg-body li { margin: 0 0 6px; }
+    .lg-body li > ul, .lg-body li > ol { margin: 6px 0 0; }
+    .lg-body li::marker { color: var(--accent, #b4141b); }
+    .lg-body strong { font-weight: 650; }
+    .lg-body code { font: 500 0.88em/1 var(--font-mono, monospace); background: var(--sheet, #fbf8f1);
+      border: 1px solid var(--rule, #cfc7b6); padding: 1px 4px; overflow-wrap: anywhere; }
+    .lg-body pre { overflow-x: auto; padding: 12px 14px; background: var(--sheet, #fbf8f1);
+      border: 1px solid var(--rule, #cfc7b6); }
+    .lg-body pre code { border: 0; padding: 0; background: none; font-size: 12.5px; line-height: 1.5; }
+    .lg-body a { overflow-wrap: anywhere; }
+    .lg-table { overflow-x: auto; border-top: 2px solid var(--ink, #141210); }
+    .lg-body table { width: 100%; border-collapse: collapse; font-size: 13.5px; line-height: 1.45; }
+    .lg-body th { text-align: left; vertical-align: bottom; padding: 8px 10px 6px 0; border-bottom: 1px solid var(--ink, #141210);
+      font: 700 10.5px/1.2 var(--font-ui, sans-serif); letter-spacing: 0.1em; text-transform: uppercase; }
+    .lg-body td { vertical-align: top; padding: 8px 10px 8px 0; border-bottom: 1px solid var(--rule, #cfc7b6); min-width: 9ch; }
+
+    /* "Privacy at a glance": the boxed fact box of a news page */
+    .factbox { margin: 0 0 28px; padding: 14px 18px 4px; background: var(--sheet, #fbf8f1);
+      border: 1px solid var(--ink, #141210); border-top: 5px solid var(--ink, #141210); }
+    .lg-body .factbox-title { margin: 0 0 10px; padding: 0; border: 0; font: 700 10.5px/1.2 var(--font-ui, sans-serif);
+      letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent, #b4141b); }
+    .factbox ul { padding-left: 1.1em; }
+    .factbox p { font-size: 13px; color: var(--muted, #625c51); }
+
+    .legal-forget { display: inline-flex; align-items: center; margin: 4px 0; min-height: 32px; padding: 0 12px;
+      border: 1px solid var(--ink, #141210); border-radius: 2px; background: transparent; color: inherit;
+      font: 600 13px/1 var(--font-ui, sans-serif); cursor: pointer; }
+    .legal-forget:hover { background: color-mix(in srgb, var(--ink, #141210) 6%, transparent); }
+
+    .lg-footer { border-top: 3px solid var(--ink, #141210); padding: 14px 0 28px; font-size: 13px; }
+    .lg-footer nav { display: flex; flex-wrap: wrap; gap: 6px 18px; font-weight: 600; }
+    .lg-footer nav a { text-decoration: none; }
+    .lg-footer nav a[aria-current] { color: var(--accent, #b4141b); }
+    .lg-footer p { margin: 8px 0 0; color: var(--muted, #625c51); }
+
+    @media (max-width: 900px) {
+      .lg-layout { grid-template-columns: minmax(0, 1fr); padding-top: 22px; }
+      .lg-toc { position: static; max-height: none; margin-bottom: 22px; }
+      .lg-toc ol { columns: 2; column-gap: 20px; }
+      .lg-toc li { break-inside: avoid; }
+    }
+    @media (max-width: 640px) {
+      .lg-wrap { padding: 0 16px; }
+      .lg-masthead { grid-template-columns: 1fr auto; min-height: 60px; }
+      .lg-ear-left { display: none; }
+      .lg-nameplate { font-size: 36px; justify-self: start; }
+      .lg-dateline { grid-template-columns: auto 1fr; font-size: 9.5px; }
+      .lg-dateline-mid { display: none; }
+      .lg-body > h1 { font-size: 38px; }
+      .lg-body h2 { font-size: 22px; }
+      .lg-toc ol { columns: 1; }
+    }
+    @media print {
+      .lg-toc, .lg-ear-right, .legal-forget, .lg-skip { display: none; }
+      .lg-layout { grid-template-columns: minmax(0, 1fr); }
+      body.lg-page { background: #fff; color: #000; }
+    }
+  </style>
+</head>
+<body class="lg-page">
+  <a class="lg-skip" href="#lg-main">Skip to the text</a>
+  <header class="lg-wrap">
+    <div class="lg-masthead">
+      <p class="lg-ear lg-ear-left">Open source · AGPL-3.0</p>
+      <a class="lg-nameplate" href="/" aria-label="heypdf :) — back to the PDF tools">heypdf<span class="smile" aria-hidden="true"> :)</span></a>
+      <nav class="lg-ear lg-ear-right" aria-label="Apps">{{#sibling_url}}<a href="{{sibling_url}}">heyp</a><span aria-hidden="true">·</span>{{/sibling_url}}<a href="/" aria-current="page">heypdf</a></nav>
+    </div>
+    <p class="lg-dateline"><span>{{section}}</span><span class="lg-dateline-mid">{{#hosted}}Files processed on our server · deleted automatically · no cookies{{/hosted}}{{^hosted}}Version {{version}}{{/hosted}}</span><span class="lg-dateline-right">Effective {{effective_date}}</span></p>
+  </header>
+
+  <div class="lg-wrap">
+    <div class="lg-layout{{^toc}} lg-no-toc{{/toc}}">
+      {{& toc}}
+      <main class="lg-body" id="lg-main">
+{{& body}}
+      </main>
+    </div>
+  </div>
+
+  <footer class="lg-wrap">
+    <div class="lg-footer">
+      <nav aria-label="Notices">{{& nav}} <a href="{{source_tree_url}}" rel="noopener">Source code (AGPL)</a></nav>
+      <p>heypdf · version {{version}}{{#source_revision}} · commit <code>{{source_revision}}</code>{{/source_revision}} · free software under the GNU Affero General Public License v3.0.</p>
+    </div>
+  </footer>
+</body>
+</html>

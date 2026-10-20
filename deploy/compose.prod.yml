@@ -1,0 +1,234 @@
+# heypdf — production stack (images from GHCR, never built on the server). PLAN.md §1, §11.
+#
+# heypdf-deploy (deploy/heypdf-deploy) runs this from releases/<commit>/ with, in this order:
+#   --env-file /etc/heypdf/heypdf.env      owner-edited settings (domain, operator, profiles, port)
+#   --env-file /srv/heypdf/state/ci.env    optional HEYP_* values sent by CI from the PROD_ENV secret
+#   --env-file <release>/release.env       HEYP_TAG=sha-<commit> (written by heypdf-deploy, never by hand)
+#
+#        Apache httpd on the host (deploy/apache/; Cloudflare may be in front) ─► 127.0.0.1:${HEYP_PORT}
+#                                  │ edge (fixed subnet = HEYP_TRUSTED_PROXIES)
+#  ┌────────────────────────────── app ───────────────────────────────┐
+#  │ heypdf UI/API, job runner, PDF engines, AI client                 │── internet (Anthropic API only)
+#  └──────┬───────────────────────────────────┬────────────────────────┘
+#         │ docs-net (internal, isolated)     │ Unix socket on the render-sock volume (no IP route at all)
+#  ┌──────▼────── docs ───────┐        ┌──────▼──────── renderer ─────────┐   ┌──── egress ─────┐
+#  │ LibreOffice, OCRmyPDF,   │        │ Chromium (Playwright), seccomp    │──▶│ policy proxy:    │──▶ internet
+#  │ Ghostscript — no network │        │ render-sbx (internal, isolated)   │   │ public IPs only  │   (egress-wan)
+#  └──────────────────────────┘        └───────────────────────────────────┘   └──────────────────┘
+#
+# Profiles (COMPOSE_PROFILES in /etc/heypdf/heypdf.env, comma-separated):
+#   (none)   app only: heypdf on 127.0.0.1:${HEYP_PORT} for the reverse proxy on the host
+#   docs     Office <-> PDF, OCR, compression, PDF/A, repair (no network access at all)
+#   render   HTML -> PDF: renderer + egress (the only path from a browser to the internet)
+# Tools whose service is not running report "available: false" with a reason; nothing else changes.
+#
+# Names: compose project "heypdf", subnets 172.31.250.0/24 and 172.31.253-255.0/24 — none of them shared with heyp's
+# own stack (project "heyp", 172.31.251-252.0/24) when both run on one server. Memory limits are ceilings, not
+# reservations; keep swap off (uploads must stay in RAM; see legal/privacy.md).
+
+name: heypdf
+
+x-logging: &logging
+  # Rotated, compressed, bounded: container logs never hold access logs (the app's is off in hosted mode).
+  driver: local
+  options:
+    max-size: 10m
+    max-file: "3"
+
+x-hardening: &hardening
+  read_only: true
+  restart: unless-stopped
+  init: true
+  cap_drop: [ALL]
+  security_opt:
+    - no-new-privileges:true
+  logging: *logging
+
+x-health: &health
+  interval: 30s
+  timeout: 5s
+  retries: 3
+  start_period: 90s
+  start_interval: 2s # Docker Engine >= 25
+
+services:
+  app:
+    <<: *hardening
+    image: ${HEYP_REGISTRY:-ghcr.io/uroy80}/heypdf:${HEYP_TAG:?HEYP_TAG is set by heypdf-deploy}
+    # Loopback only: the proxy on the host connects here.
+    ports:
+      - "${HEYP_BIND:-127.0.0.1}:${HEYP_PORT:-8181}:8080"
+    environment:
+      HEYP_MODE: hosted
+      HEYP_PUBLIC_URL: "${HEYP_PUBLIC_URL:-https://${HEYP_DOMAIN:?set HEYP_DOMAIN in /etc/heypdf/heypdf.env}}"
+      # heyp, the photo toolbox: the "heyp · heypdf" switch links there ("off" = no switch).
+      HEYP_SIBLING_URL: "${HEYP_SIBLING_URL:-off}"
+      # Only the proxy's hop may set X-Forwarded-For (rate limits and AI budgets are keyed on the client IP). The
+      # default is the edge network below: the host proxy's connections to the published port arrive from its
+      # gateway. Behind a CDN the host proxy turns the CDN's visitor header into that one hop (deploy/apache/).
+      HEYP_TRUSTED_PROXIES: "${HEYP_TRUSTED_PROXIES:-${HEYP_EDGE_SUBNET:-172.31.253.0/24}}"
+      HEYP_SOURCE_URL: "${HEYP_SOURCE_URL:-https://github.com/uroy80/heypdf}"
+      # Files: idle TTL + hard TTL from upload (legal/privacy.md promises both).
+      HEYP_TTL_MINUTES: "${HEYP_TTL_MINUTES:-60}"
+      HEYP_HARD_TTL_MINUTES: "${HEYP_HARD_TTL_MINUTES:-240}"
+      HEYP_MAX_UPLOAD_MB: "${HEYP_MAX_UPLOAD_MB:-100}"
+      # Largest upload request (MiB); empty = automatic (257). Behind a CDN set it under the CDN's body cap
+      # (Cloudflare: 95): the UI then sizes its upload batches from it.
+      HEYP_MAX_REQUEST_MB: "${HEYP_MAX_REQUEST_MB:-}"
+      HEYP_MAX_FILES: "${HEYP_MAX_FILES:-50}"
+      HEYP_MAX_PIXELS: "${HEYP_MAX_PIXELS:-50000000}"
+      HEYP_MAX_JOBS: "${HEYP_MAX_JOBS:-2}"
+      HEYP_CACHE_MB: "${HEYP_CACHE_MB:-256}"
+      # Job lanes: light (most PDF tools), heavy (PDF → JPG/Word, Scan, Compare), docs, render, ai.
+      HEYP_LANE_LIGHT: "${HEYP_LANE_LIGHT:-2}"
+      HEYP_LANE_HEAVY: "${HEYP_LANE_HEAVY:-1}"
+      HEYP_LANE_DOCS: "${HEYP_LANE_DOCS:-1}"
+      HEYP_LANE_RENDER: "${HEYP_LANE_RENDER:-1}"
+      HEYP_LANE_AI: "${HEYP_LANE_AI:-2}"
+      HEYP_SANDBOX_SLOTS: "${HEYP_SANDBOX_SLOTS:-2}"
+      HEYP_ALLOW_CROSS_ORIGIN: "0"
+      HEYP_DOCS: "0"
+      HEYP_STATE_DIR: /var/lib/heypdf
+      # Optional services (unreachable = their tools report available:false).
+      HEYP_DOCS_URL: "http://docs:8080"
+      HEYP_RENDERER_SOCKET: /run/renderer/r.sock
+      # Optional AI tools: empty key = off. Sent from the PROD_ENV secret as HEYP_ANTHROPIC_API_KEY.
+      ANTHROPIC_API_KEY: "${HEYP_ANTHROPIC_API_KEY:-}"
+      HEYP_AI_MODEL: "${HEYP_AI_MODEL:-claude-opus-5-5}"
+      HEYP_AI_INFERENCE_GEO: "${HEYP_AI_INFERENCE_GEO:-us}"
+      HEYP_AI_REQUEST_USD: "${HEYP_AI_REQUEST_USD:-1.00}"
+      HEYP_AI_DAILY_USD: "${HEYP_AI_DAILY_USD:-10.00}"
+      HEYP_AI_MAX_PAGES: "${HEYP_AI_MAX_PAGES:-100}"
+      # Operator and legal pages (/privacy, /terms): see heypdf.env.example.
+      HEYP_OPERATOR_NAME: "${HEYP_OPERATOR_NAME:?set HEYP_OPERATOR_NAME in /etc/heypdf/heypdf.env}"
+      HEYP_OPERATOR_EMAIL: "${HEYP_OPERATOR_EMAIL:?set HEYP_OPERATOR_EMAIL in /etc/heypdf/heypdf.env}"
+      HEYP_OPERATOR_COUNTRY: "${HEYP_OPERATOR_COUNTRY:-}"
+      HEYP_GRIEVANCE_OFFICER: "${HEYP_GRIEVANCE_OFFICER:-}"
+      HEYP_POSTAL_ADDRESS: "${HEYP_POSTAL_ADDRESS:-}"
+      HEYP_JURISDICTION: "${HEYP_JURISDICTION:-India}"
+      HEYP_EFFECTIVE_DATE: "${HEYP_EFFECTIVE_DATE:-}"
+      HEYP_LOG_RETENTION_DAYS: "${HEYP_LOG_RETENTION_DAYS:-14}"
+      HEYP_LOG_IP_TRUNCATED: "${HEYP_LOG_IP_TRUNCATED:-0}"
+      HEYP_BACKUP_RETENTION_DAYS: "${HEYP_BACKUP_RETENTION_DAYS:-14}"
+      HEYP_HOSTING_PROVIDER: "${HEYP_HOSTING_PROVIDER:-Hostinger}"
+      # A CDN in front of the server (e.g. Cloudflare) sees all traffic: /privacy and /terms name it when this is set.
+      HEYP_CDN_PROVIDER: "${HEYP_CDN_PROVIDER:-}"
+      HEYP_CDN_DPA_URL: "${HEYP_CDN_DPA_URL:-}"
+      HEYP_SERVER_LOCATION: "${HEYP_SERVER_LOCATION:-}"
+      HEYP_SECURITY_EMAIL: "${HEYP_SECURITY_EMAIL:-}"
+      HEYP_ABUSE_EMAIL: "${HEYP_ABUSE_EMAIL:-}"
+      HEYP_EU_REPRESENTATIVE: "${HEYP_EU_REPRESENTATIVE:-}"
+      HEYP_UK_REPRESENTATIVE: "${HEYP_UK_REPRESENTATIVE:-}"
+      HEYP_DMCA_AGENT: "${HEYP_DMCA_AGENT:-}"
+      HEYP_LIABILITY_CAP: "${HEYP_LIABILITY_CAP:-}"
+    volumes:
+      - state:/var/lib/heypdf # AI spend ledger: survives deploys and restarts (never uploads)
+      - render-sock:/run/renderer
+    tmpfs:
+      # Uploads and results live here (RAM, charged to mem_limit). Full → 507, never an OOM kill.
+      - "/tmp:size=${HEYP_TMP_SIZE:-768m}"
+    mem_limit: "${HEYP_MEM_LIMIT:-2560m}"
+    cpus: ${HEYP_CPUS:-1.5}
+    pids_limit: 512
+    stop_grace_period: 30s
+    healthcheck:
+      <<: *health
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/api/health', timeout=4)"]
+    networks: [edge, docs-net]
+
+  docs:
+    <<: *hardening
+    profiles: [docs]
+    image: ${HEYP_REGISTRY:-ghcr.io/uroy80}/heypdf-docs:${HEYP_TAG:?HEYP_TAG is set by heypdf-deploy}
+    environment:
+      HEYP_DOCS_SLOTS: "1"           # one soffice/OCR job at a time (two slots overran the container in testing)
+      HEYP_DOCS_AS_MB: "1024"        # RLIMIT_AS per engine process
+      HEYP_DOCS_OCR_JOBS: "1"
+    tmpfs:
+      - "/tmp:size=${HEYP_DOCS_TMP_SIZE:-384m}"
+    mem_limit: "${HEYP_DOCS_MEM_LIMIT:-1280m}"
+    cpus: ${HEYP_DOCS_CPUS:-1.0}
+    pids_limit: 256
+    healthcheck:
+      <<: *health
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/healthz', timeout=4)"]
+    networks: [docs-net] # internal + isolated: no internet, no host, only the app
+
+  renderer:
+    <<: *hardening
+    profiles: [render]
+    image: ${HEYP_REGISTRY:-ghcr.io/uroy80}/heypdf-renderer:${HEYP_TAG:?HEYP_TAG is set by heypdf-deploy}
+    security_opt:
+      - no-new-privileges:true
+      # Docker's default profile + clone/unshare/chroot, so Chromium's own sandbox can run (no capabilities).
+      - seccomp=./seccomp/chromium-userns.json
+    environment:
+      HOME: /tmp
+      HEYP_RENDER_SOCKET: /run/renderer/r.sock
+      HEYP_RENDER_EGRESS_HOST: egress
+      HEYP_RENDER_EGRESS_SECRET: "${HEYP_EGRESS_SECRET:?set HEYP_EGRESS_SECRET (openssl rand -hex 32) in /etc/heypdf/heypdf.env}"
+      HEYP_RENDER_MAX_CONCURRENT: "1" # <= the egress slots
+      HEYP_RENDER_MAX_QUEUE: "4"
+      HEYP_RENDER_CHROMIUM_SANDBOX: "1"
+    volumes:
+      - render-sock:/run/renderer
+    tmpfs:
+      - "/tmp:size=${HEYP_RENDERER_TMP_SIZE:-384m},mode=1777"
+    mem_limit: "${HEYP_RENDERER_MEM_LIMIT:-1g}"
+    cpus: ${HEYP_RENDERER_CPUS:-1.0}
+    pids_limit: 512
+    healthcheck:
+      <<: *health
+      test: ["CMD", "python", "-c", "import socket; s = socket.socket(socket.AF_UNIX); s.settimeout(4); s.connect('/run/renderer/r.sock'); s.sendall(b'GET /healthz HTTP/1.0\\r\\nHost: renderer\\r\\n\\r\\n'); assert b' 200 ' in s.recv(64)"]
+    networks: [render-sbx] # its only neighbour is the egress proxy; no route to the app, the host or the internet
+
+  egress:
+    <<: *hardening
+    profiles: [render]
+    image: ${HEYP_REGISTRY:-ghcr.io/uroy80}/heypdf-egress:${HEYP_TAG:?HEYP_TAG is set by heypdf-deploy}
+    environment:
+      HEYP_EGRESS_SECRET: "${HEYP_EGRESS_SECRET:?set HEYP_EGRESS_SECRET (openssl rand -hex 32) in /etc/heypdf/heypdf.env}"
+      HEYP_EGRESS_SLOTS: "1"
+      HEYP_EGRESS_ALLOW_PORTS: "80,443"
+      HEYP_EGRESS_MAX_JOB_BYTES: "52428800" # 50 MB per render, both directions
+      # REQUIRED: this server's own public addresses, so other sites and panels on the VPS are unreachable
+      # (bootstrap-vps.sh fills it in). Private, loopback, link-local and other reserved ranges are always denied.
+      HEYP_EGRESS_DENY_CIDRS: "${HEYP_EGRESS_DENY_CIDRS:?set HEYP_EGRESS_DENY_CIDRS to this VPS's public IPs}"
+      HEYP_EGRESS_DENY_LOCAL_NETS: "1"
+      HEYP_EGRESS_LOG_HOSTS: "0" # never log capture destinations (/privacy); the default, stated here
+    mem_limit: 128m
+    cpus: 0.25
+    pids_limit: 64
+    networks: [render-sbx, egress-wan]
+
+networks:
+  edge:
+    ipam:
+      config:
+        - subnet: "${HEYP_EDGE_SUBNET:-172.31.253.0/24}" # = the default HEYP_TRUSTED_PROXIES
+  # The internal networks have fixed subnets too: left to Docker's automatic pools, one of them could take
+  # 172.31.0.0/16 on a busy host and then collide with edge/egress-wan.
+  docs-net:
+    internal: true
+    driver_opts:
+      # No address for the host on this bridge: the docs worker reaches nothing but the app (Engine >= 28).
+      com.docker.network.bridge.gateway_mode_ipv4: isolated
+    ipam:
+      config:
+        - subnet: "${HEYP_DOCS_SUBNET:-172.31.255.0/24}"
+  render-sbx:
+    internal: true
+    driver_opts:
+      com.docker.network.bridge.gateway_mode_ipv4: isolated
+    ipam:
+      config:
+        - subnet: "${HEYP_RENDER_SUBNET:-172.31.250.0/24}"
+  egress-wan:
+    ipam:
+      config:
+        # Fixed so the optional host guard (heypdf-egress-guard) can match it; change both if it collides.
+        - subnet: "${HEYP_EGRESS_SUBNET:-172.31.254.0/24}"
+
+volumes:
+  state: {}
+  render-sock: {}

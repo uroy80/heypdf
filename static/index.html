@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="heypdf is an open-source PDF toolbox: merge, split, compress, convert, edit, sign, redact and compare PDFs.">
+  <meta name="referrer" content="no-referrer">
+  <title>heypdf :) · PDF toolbox</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="/fonts/fraunces-latin-opsz-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/libre-franklin-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/pdf.css">
+  <script src="/js/theme.js"></script>
+  <script type="module" src="/js/main.js"></script>
+</head>
+<body class="heypdf copy-pending">
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="topbar pdf-topbar">
+    <a class="brand" href="/" data-nav aria-label="heypdf :) — every tool">
+      <span class="wordmark">heypdf<span class="smile" aria-hidden="true"> :)</span></span>
+    </a>
+    <div class="topbar-actions">
+      <span class="local-pill" id="mode-pill" hidden></span>
+      <a class="btn btn-ghost add-btn pdf-all" href="/" data-nav>All tools</a>
+      <button type="button" class="icon-btn" id="theme-btn" aria-label="Toggle theme"></button>
+    </div>
+    <div class="dateline">
+      <span class="dateline-edition" id="dateline-edition"></span>
+      <nav class="dateline-mid sibling" aria-label="Switch app">
+        <a class="sibling-link" id="sibling-heyp" rel="noopener" hidden>heyp <span class="sibling-what">images</span></a><span class="sibling-dot" id="sibling-dot" aria-hidden="true" hidden>·</span><a href="/" class="sibling-link" aria-current="page" data-nav>heypdf <span class="sibling-what">documents</span></a>
+      </nav>
+      <time class="dateline-date" id="dateline-date"></time>
+    </div>
+  </header>
+
+  <main class="pdf-main" id="main" tabindex="-1">
+    <p class="boot-line" aria-live="polite">Setting the type…</p>
+  </main>
+
+  <footer class="pdf-footer">
+    <p class="footer-mark">heypdf<span class="smile" aria-hidden="true"> :)</span> <span class="muted" id="footer-operator"></span></p>
+    <nav class="footer-links" aria-label="About">
+      <a href="/privacy">Privacy</a>
+      <a href="/terms">Terms</a>
+      <a href="/credits">Credits</a>
+      <a href="https://github.com/uroy80/heypdf" id="source-link" rel="noopener">Source code (AGPL-3.0)</a>
+    </nav>
+    <p class="footer-version muted" id="footer-version"></p>
+  </footer>
+
+  <div class="dropveil" id="dropveil" hidden aria-hidden="true">
+    <div class="dropveil-inner">Drop to add files</div>
+  </div>
+
+  <div class="toasts" id="toasts"></div>
+
+  <noscript><p class="noscript">heypdf needs JavaScript to run.</p></noscript>
+</body>
+</html>

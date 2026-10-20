@@ -1,0 +1,3885 @@
+{
+ "generated_from": "app.core.registry",
+ "tools": [
+  {
+   "id": "pdf.summarize",
+   "title": "AI Summarizer",
+   "summary": "Get a short, faithful summary of a PDF, written as you watch.",
+   "category": "Intelligence",
+   "slug": "summarize",
+   "inputs": [
+    "pdf"
+   ],
+   "min_files": 1,
+   "max_files": 5,
+   "limits": {
+    "max_pages": 100,
+    "max_pages_total": 100,
+    "max_mb": 100,
+    "max_files": 5
+   },
+   "lane": "ai",
+   "engine": "ai",
+   "options_schema": {
+    "additionalProperties": false,
+    "description": "Options of the AI Summarizer.",
+    "properties": {
+     "length": {
+      "default": "medium",
+      "enum": [
+       "short",
+       "medium",
+       "long"
+      ],
+      "title": "Length",
+      "type": "string",
+      "ui": {
+       "labels": {
+        "long": "Long",
+        "medium": "Medium",
+        "short": "Short"
+       },
+       "widget": "segmented"
+      }
+     },
+     "format": {
+      "default": "paragraphs",
+      "enum": [
+       "paragraphs",
+       "bullets"
+      ],
+      "title": "Format",
+      "type": "string",
+      "ui": {
+       "labels": {
+        "bullets": "Key points",
+        "paragraphs": "Paragraphs"
+       },
+       "widget": "segmented"
+      }
+     },
+     "language": {
+      "default": "auto",
+      "enum": [
+       "auto",
+       "en",
+       "de",
+       "fr",
+       "es",
+       "it",
+       "pt",
+       "pt-BR",
+       "nl",
+       "pl",
+       "sv",
+       "da",
+       "no",
+       "fi",
+       "cs",
+       "ro",
+       "hu",
+       "el",
+       "bg",
+       "ca",
+       "tr",
+       "ru",
+       "uk",
+       "ar",
+       "he",
+       "fa",
+       "ur",
+       "hi",
+       "bn",
+       "ta",
+       "te",
+       "mr",
+       "th",
+       "vi",
+       "id",
+       "ms",
+       "sw",
+       "zh-Hans",
+       "zh-Hant",
+       "ja",
+       "ko"
+      ],
+      "title": "Language",
+      "type": "string",
+      "ui": {
+       "labels": {
+        "ar": "Arabic",
+        "auto": "Same as the document",
+        "bg": "Bulgarian",
+        "bn": "Bengali",
+        "ca": "Catalan",
+        "cs": "Czech",
+        "da": "Danish",
+        "de": "German",
+        "el": "Greek",
+        "en": "English",
+        "es": "Spanish",
+        "fa": "Persian",
+        "fi": "Finnish",
+        "fr": "French",
+        "he": "Hebrew",
+        "hi": "Hindi",
+        "hu": "Hungarian",
+        "id": "Indonesian",
+        "it": "Italian",
+        "ja": "Japanese",
+        "ko": "Korean",
+        "mr": "Marathi",
+        "ms": "Malay",
+        "nl": "Dutch",
+        "no": "Norwegian",
+        "pl": "Polish",
+        "pt": "Portuguese",
+        "pt-BR": "Brazilian Portuguese",
+        "ro": "Romanian",
+        "ru": "Russian",
+        "sv": "Swedish",
+        "sw": "Swahili",
+        "ta": "Tamil",
+        "te": "Telugu",
+        "th": "Thai",
+        "tr": "Turkish",
+        "uk": "Ukrainian",
+        "ur": "Urdu",
+        "vi": "Vietnamese",
+        "zh-Hans": "Simplified Chinese",
+        "zh-Hant": "Traditional Chinese"
+       },
+       "widget": "select"
+      }
+     }
+    },
+    "title": "SummarizeOptions",
+    "type": "object",
+    "ui": {
+     "notice": "AI tools use Claude by Anthropic: the text extracted from your PDF is sent to Anthropic's API to produce the result. Images and the file itself are not sent.",
+     "stream": true
+    }
+   }
+  },
+  {
+   "id": "pdf.translate",
+   "title": "Translate PDF",
+   "summary": "Translate a PDF into another language and keep its layout, images and tables.",
+   "category": "Intelligence",
+   "slug": "translate",
+   "inputs": [
+    "pdf"
+   ],
+   "min_files": 1,
+   "max_files": 1,
+   "limits": {
+    "max_pages": 100,
+    "max_mb": 100
+   },
+   "lane": "ai",
+   "engine": "ai",
+   "options_schema": {
+    "additionalProperties": false,
+    "description": "Options of Translate PDF.",
+    "properties": {
+     "target": {
+      "default": "en",
+      "enum": [
+       "en",
+       "de",
+       "fr",
+       "es",
+       "it",
+       "pt",
+       "pt-BR",
+       "nl",
+       "pl",
+       "sv",
+       "da",
+       "no",
+       "fi",
+       "cs",
+       "ro",
+       "hu",
+       "el",
+       "bg",
+       "ca",
+       "tr",
+       "ru",
+       "uk",
+       "ar",
+       "he",
+       "fa",
+       "ur",
+       "hi",
+       "bn",
+       "ta",
+       "te",
+       "mr",
+       "th",
+       "vi",
+       "id",
+       "ms",
+       "sw",
+       "zh-Hans",
+       "zh-Hant",
+       "ja",
+       "ko"
+      ],
+      "title": "Translate to",
+      "type": "string",
+      "ui": {
+       "labels": {
+        "ar": "Arabic",
+        "bg": "Bulgarian",
+        "bn": "Bengali",
+        "ca": "Catalan",
+        "cs": "Czech",
+        "da": "Danish",
+        "de": "German",
+        "el": "Greek",
+        "en": "English",
+        "es": "Spanish",
+        "fa": "Persian",
+        "fi": "Finnish",
+        "fr": "French",
+        "he": "Hebrew",
+        "hi": "Hindi",
+        "hu": "Hungarian",
+        "id": "Indonesian",
+        "it": "Italian",
+        "ja": "Japanese",
+        "ko": "Korean",
+        "mr": "Marathi",
+        "ms": "Malay",
+        "nl": "Dutch",
+        "no": "Norwegian",
+        "pl": "Polish",
+        "pt": "Portuguese",
+        "pt-BR": "Brazilian Portuguese",
+        "ro": "Romanian",
+        "ru": "Russian",
+        "sv": "Swedish",
+        "sw": "Swahili",
+        "ta": "Tamil",
+        "te": "Telugu",
+        "th": "Thai",
+        "tr": "Turkish",
+        "uk": "Ukrainian",
+        "ur": "Urdu",
+        "vi": "Vietnamese",
+        "zh-Hans": "Simplified Chinese",
+        "zh-Hant": "Traditional Chinese"
+       },
+       "widget": "select"
+      }
+     },
+     "mode": {
+      "default": "layout",
+      "enum": [
+       "layout",
+       "text"
+      ],
+      "title": "Output",
+      "type": "string",
+      "ui": {
+       "labels": {
+        "layout": "Keep layout",
+        "text": "Text only"
+       },
+       "widget": "segmented"
+      }
+     }
+    },
+    "title": "TranslateOptions",
+    "type": "object",
+    "ui": {
+     "notice": "AI tools use Claude by Anthropic: the text extracted from your PDF is sent to Anthropic's API to produce the result. Images and the file itself are not sent."
+    }
+   }
+  },
+  {
+   "id": "pdf.from_images",
+   "title": "JPG to PDF",
+   "summary": "Put photos and images into a PDF — page size, orientation and margins as you like.",
+   "category": "Convert to PDF",
+   "slug": "from-images",
+   "inputs": [
+    "image"
+   ],
+   "min_files": 1,
+   "max_files": 200,
+   "limits": {
+    "max_total_mb": 1000
+   },
+   "lane": "light",
+   "engine": "app",
+   "options_schema": {
+    "additionalProperties": false,
+    "properties": {
+     "page_size": {
+      "default": "a4",
+      "enum": [
+       "fit",
+       "a4",
+       "letter"
+      ],
+      "title": "Page Size",
+      "type": "string",
+      "ui": {
+       "labels": {
+        "a4": "A4",
+        "fit": "Fit (same as image)",
+        "letter": "US Letter"
+       },
+       "widget": "segmented"
+      }
+     },
+     "orientation": {
+      "default": "portrait",
+      "enum": [
+       "portrait",
+       "landscape",
+       "auto"
+      ],
+      "title": "Orientation",
+      "type": "string",
+      "ui": {
+       "show_if": {
+        "page_size": [
+         "a4",
+         "letter"
+        ]
+       },
+       "widget": "segmented"
+      }
+     },
+     "margin": {
+      "default": 0,
+      "enum": [
+       0,
+       20,
+       40
+      ],
+      "title": "Margin",
+      "type": "integer",
+      "ui": {
+       "labels": {
+        "0": "No margin",
+        "20": "Small",
+        "40": "Big"
+       },
+       "unit": "pt",
+       "widget": "segmented"
+      }
+     },
+     "merge": {
+      "default": true,
+      "description": "All images in one PDF",
+      "title": "Merge",
+      "type": "boolean",
+      "ui": {
+       "widget": "toggle"
+      }
+     }
+    },
+    "title": "FromImagesOptions",
+    "type": "object"
+   }
+  },
+  {
+   "id": "pdf.to_images",
+   "title": "PDF to JPG",
+   "summary": "Turn each page into a JPG or PNG, or pull out the images inside the PDF.",
+   "category": "Convert from PDF",
+   "slug": "to-images",
+   "inputs": [
+    "pdf"
+   ],
+   "min_files": 1,
+   "max_files": 20,
+   "limits": {
+    "max_pages": 5000,
+    "memory_mb": 1024
+   },
+   "lane": "heavy",
+   "engine": "app",
+   "options_schema": {
+    "additionalProperties": false,
+    "properties": {
+     "mode": {
+      "default": "pages",
+      "enum": [
+       "pages",
+       "extract"
+      ],
+      "title": "Mode",
+      "type": "string",
+      "ui": {
+       "labels": {
+        "extract": "Extract images",
+        "pages": "Page to image"
+       },
+       "widget": "segmented"
+      }
+     },
+     "format": {
+      "default": "jpg",
+      "enum": [
+       "jpg",
+       "png"
+      ],
+      "title": "Format",
+      "type": "string",
+      "ui": {
+       "show_if": {
+        "mode": "pages"
+       },
+       "widget": "segmented"
+      }
+     },
+     "dpi": {
+      "default": 150,
+      "enum": [
+       72,
+       96,
+       150,
+       200,
+       300
+      ],
+      "title": "Dpi",
+      "type": "integer",
+      "ui": {
+       "labels": {
+        "150": "Normal (150 dpi)",
+        "300": "High (300 dpi)"
+       },
+       "show_if": {
+        "mode": "pages"
+       },
+       "unit": "dpi",
+       "widget": "select"
+      }
+     },
+     "quality": {
+      "default": 85,
+      "maximum": 100,
+      "minimum": 30,
+      "title": "Quality",
+      "type": "integer",
+      "ui": {
+       "show_if": {
+        "format": "jpg",
+        "mode": "pages"
+       },
+       "widget": "slider"
+      }
+     },
+     "pages": {
+      "default": "all",
+      "maxLength": 2000,
+      "title": "Pages",
+      "type": "string",
+      "ui": {
+       "widget": "pages"
+      }
+     }
+    },
+    "title": "ToImagesOptions",
+    "type": "object"
+   }
+  },
+  {
+   "id": "pdf.to_word",
+   "title": "PDF to Word",
+   "summary": "An editable DOCX that keeps paragraphs, tables and images where it can.",
+   "category": "Convert from PDF",
+   "slug": "to-word",
+   "inputs": [
+    "pdf"
+   ],
+   "min_files": 1,
+   "max_files": 1,
+   "limits": {
+    "max_pages": 300,
+    "memory_mb": 1536
+   },
+   "lane": "heavy",
+   "engine": "app",
+   "options_schema": {
+    "additionalProperties": false,
+    "properties": {
+     "mode": {
+      "default": "auto",
+      "description": "Layout keeps positions, tables and images; Text rebuilds plain paragraphs (best for scanned PDFs that were OCR'd)",
+      "enum": [
+       "auto",
+       "layout",
+       "text"
+      ],
+      "title": "Mode",
+      "type": "string",
+      "ui": {
+       "labels": {
+        "auto": "Automatic",
+        "layout": "Keep layout",
+        "text": "Text only"
+       },
+       "widget": "segmented"
+      }
+     },
+     "pages": {
+      "default": "all",
+      "maxLength": 2000,
+      "title": "Pages",
+      "type": "string",
+      "ui": {
+       "widget": "pages"
+      }
+     }
+    },
+    "title": "ToWordOptions",
+    "type": "object"
+   }
+  },
+  {
+   "id": "pdf.to_excel",
+   "title": "PDF to Excel",
+   "summary": "Find the tables in a PDF and put them into a spreadsheet.",
+   "category": "Convert from PDF",
+   "slug": "to-excel",
+   "inputs": [
+    "pdf"
+   ],
+   "min_files": 1,
+   "max_files": 1,
+   "limits": {
+    "max_pages": 1000
+   },
+   "lane": "light",
+   "engine": "app",
+   "options_schema": {
+    "additionalProperties": false,
+    "properties": {
+     "layout": {
+      "default": "sheet_per_table",
+      "enum": [
+       "sheet_per_table",
+       "sheet_per_page",
+       "one_sheet"
+      ],
+      "title": "Layout",
+      "type": "string",
+      "ui": {
+       "labels": {
+        "one_sheet": "Everything on one sheet",
+        "sheet_per_page": "One sheet per page",
+        "sheet_per_table": "One sheet per table"
+       },
+       "widget": "select"
+      }
+     },
+     "strategy": {
+      "default": "auto",
+      "description": "Lines finds ruled tables; Text finds tables aligned by whitespace",
+      "enum": [
+       "auto",
+       "lines",
+       "text"
+      ],
+      "title": "Strategy",
+      "type": "string",
+      "ui": {
+       "widget": "segmented"
+      }
+     },
+     "numbers": {
+      "default": true,
+      "description": "Store numbers as numbers",
+      "title": "Numbers",
+      "type": "boolean",
+      "ui": {
+       "widget": "toggle"
+      }
+     },
+     "pages": {
+      "default": "all",
+      "maxLength": 2000,
+      "title": "Pages",
+      "type": "string",
+      "ui": {
+       "widget": "pages"
+      }
+     }
+    },
+    "title": "ToExcelOptions",
+    "type": "object"
+   }
+  },
+  {
+   "id": "pdf.to_markdown",
+   "title": "PDF to Markdown",
+   "summary": "Clean Markdown with headings, lists, tables and links — handy for notes and AI tools.",
+   "category": "Convert from PDF",
+   "slug": "to-markdown",
+   "inputs": [
+    "pdf"
+   ],
+   "min_files": 1,
+   "max_files": 1,
+   "limits": {
+    "max_pages": 1000
+   },
+   "lane": "light",
+   "engine": "app",
+   "options_schema": {
+    "additionalProperties": false,
+    "properties": {
+     "pages": {
+      "default": "all",
+      "maxLength": 2000,
+      "title": "Pages",
+      "type": "string",
+      "ui": {
+       "widget": "pages"
+      }
+     },
+     "images": {
+      "default": "placeholder",
+      "description": "Mark where images were, or leave them out",
+      "enum": [
+       "placeholder",
+       "omit"
+      ],
+      "title": "Images",
+      "type": "string",
+      "ui": {
+       "widget": "segmented"
+      }
+     },
+     "headers_footers": {
+      "default": "remove",
+      "description": "Running headers, footers and page numbers",
+      "enum": [
+       "remove",
+       "keep"
+      ],
+      "title": "Headers Footers",
+      "type": "string",
+      "ui": {
+       "widget": "segmented"
+      }
+     },
+     "page_breaks": {
+      "default": false,
+      "description": "Mark page breaks with a rule",
+      "title": "Page Breaks",
+      "type": "boolean",
+      "ui": {
+       "widget": "toggle"
+      }
+     }
+    },
+    "title": "ToMarkdownOptions",
+    "type": "object"
+   }
+  },
+  {
+   "id": "pdf.compress",
+   "title": "Compress PDF",
+   "summary": "Make a PDF smaller while keeping it readable — choose how hard to squeeze the images.",
+   "category": "Optimize",
+   "slug": "compress",
+   "inputs": [
+    "pdf"
+   ],
+   "min_files": 1,
+   "max_files": 5,
+   "limits": {
+    "max_mb": 200,
+    "max_pages": 2000,
+    "max_files": 5
+   },
+   "lane": "docs",
+   "engine": "docs",
+   "options_schema": {
+    "additionalProperties": false,
+    "properties": {
+     "level": {
+      "default": "recommended",
+      "enum": [
+       "extreme",
+       "recommended",
+       "less"
+      ],
+      "title": "Compression",
+      "type": "string",
+      "ui": {
+       "labels": {
+        "extreme": "Extreme — smallest file, lower image quality (72 dpi)",
+        "less": "Less — high quality, less compression (220 dpi)",
+        "recommended": "Recommended — good quality, good compression (150 dpi)"
+       },
+       "widget": "radio"
+      }
+     }
+    },
+    "title": "CompressOptions",
+    "type": "object"
+   }
+  },
+  {
+   "id": "pdf.repair",
+   "title": "Repair PDF",
+   "summary": "Rebuild a damaged PDF that won't open, and recover as much of it as possible.",
+   "category": "Optimize",
+   "slug": "repair",
+   "inputs": [
+    "pdf"
+   ],
+   "min_files": 1,
+   "max_files": 5,
+   "limits": {
+    "max_mb": 200,
+    "max_files": 5
+   },
+   "lane": "docs",
+   "engine": "docs",
+   "options_schema": {
+    "additionalProperties": false,
+    "properties": {},
+    "title": "RepairOptions",
+    "type": "object"
+   }
+  },
+  {
+   "id": "pdf.ocr",
+   "title": "OCR PDF",
+   "summary": "Turn a scanned PDF into one you can search, select and copy text from.",
+   "category": "Optimize",
+   "slug": "ocr",
+   "inputs": [
+    "pdf"
+   ],
+   "min_files": 1,
+   "max_files": 1,
+   "limits": {
+    "max_mb": 200,
+    "max_pages": 200
+   },
+   "lane": "docs",
+   "engine": "docs",
+   "options_schema": {
+    "additionalProperties": false,
+    "properties": {
+     "languages": {
+      "default": [
+       "eng"
+      ],
+      "description": "Up to three languages that appear in the document",
+      "items": {
+       "enum": [
+        "eng",
+        "hin",
+        "ben",
+        "tam",
+        "tel",
+        "mar",
+        "guj",
+        "kan",
+        "mal",
+        "pan",
+        "ori",
+        "urd",
+        "asm",
+        "san",
+        "nep",
+        "fra",
+        "deu",
+        "spa",
+        "por",
+        "ita",
+        "nld",
+        "pol",
+        "tur",
+        "rus",
+        "ukr",
+        "ara",
+        "heb",
+        "fas",
+        "chi_sim",
+        "chi_tra",
+        "jpn",
+        "kor",
+        "vie",
+        "ind",
+        "tha"
+       ],
+       "type": "string"
+      },
+      "maxItems": 3,
+      "minItems": 1,
+      "title": "Document languages",
+      "type": "array",
+      "ui": {
+       "labels": {
+        "ara": "Arabic",
+        "asm": "Assamese",
+        "ben": "Bengali",
+        "chi_sim": "Chinese (Simplified)",
+        "chi_tra": "Chinese (Traditional)",
+        "deu": "German",
+        "eng": "English",
+        "fas": "Persian",
+        "fra": "French",
+        "guj": "Gujarati",
+        "heb": "Hebrew",
+        "hin": "Hindi",
+        "ind": "Indonesian",
+        "ita": "Italian",
+        "jpn": "Japanese",
+        "kan": "Kannada",
+        "kor": "Korean",
+        "mal": "Malayalam",
+        "mar": "Marathi",
+        "nep": "Nepali",
+        "nld": "Dutch",
+        "ori": "Odia",
+        "pan": "Punjabi",
+        "pol": "Polish",
+        "por": "Portuguese",
+        "rus": "Russian",
+        "san": "Sanskrit",
+        "spa": "Spanish",
+        "tam": "Tamil",
+        "tel": "Telugu",
+        "tha": "Thai",
+        "tur": "Turkish",
+        "ukr": "Ukrainian",
+        "urd": "Urdu",
+        "vie": "Vietnamese"
+       },
+       "max_items": 3,
+       "widget": "multiselect"
+      }
+     },
+     "mode": {
+      "default": "skip",
+      "enum": [
+       "skip",
+       "redo",
+       "force"
+      ],
+      "title": "Pages that already have text",
+      "type": "string",
+      "ui": {
+       "labels": {
+        "force": "Rasterise and OCR every page",
+        "redo": "Replace an earlier OCR layer",
+        "skip": "Leave them as they are"
+       },
+       "widget": "select"
+      }
+     },
+     "deskew": {
+      "default": true,
+      "title": "Straighten tilted scans",
+      "type": "boolean"
+     },
+     "rotate_pages": {
+      "default": true,
+      "title": "Fix upside-down and sideways pages",
+      "type": "boolean"
+     },
+     "pdfa": {
+      "default": false,
+      "title": "Save as PDF/A-2b (archival)",
+      "type": "boolean"
+     }
+    },
+    "title": "OcrOptions",
+    "type": "object"
+   }
+  },
+  {
+   "id": "pdf.to_pdfa",
+   "title": "PDF to PDF/A",
+   "summary": "Convert a PDF to PDF/A for long-term archiving (levels 1b, 2b, 3b).",
+   "category": "Convert from PDF",
+   "slug": "to-pdfa",
+   "inputs": [
+    "pdf"
+   ],
+   "min_files": 1,
+   "max_files": 5,
+   "limits": {
+    "max_mb": 200,
+    "max_pages": 2000,
+    "max_files": 5
+   },
+   "lane": "docs",
+   "engine": "docs",
+   "options_schema": {
+    "additionalProperties": false,
+    "properties": {
+     "conformance": {
+      "default": "2b",
+      "enum": [
+       "1b",
+       "2b",
+       "3b"
+      ],
+      "title": "PDF/A level",
+      "type": "string",
+      "ui": {
+       "labels": {
+        "1b": "PDF/A-1b",
+        "2b": "PDF/A-2b (recommended)",
+        "3b": "PDF/A-3b"
+       },
+       "widget": "segmented"
+      }
+     }
+    },
+    "title": "PdfaOptions",
+    "type": "object"
+   }
+  },
+  {
+   "id": "pdf.from_office",
+   "title": "Office to PDF",
+   "summary": "Convert Word, PowerPoint and Excel files (or their OpenDocument cousins) to PDF.",
+   "category": "Convert to PDF",
+   "slug": "from-office",
+   "inputs": [
+    "office"
+   ],
+   "min_files": 1,
+   "max_files": 10,
+   "limits": {
+    "max_mb": 100,
+    "max_files": 10
+   },
+   "lane": "docs",
+   "engine": "docs",
+   "options_schema": {
+    "additionalProperties": false,
+    "properties": {
+     "pdfa": {
+      "default": false,
+      "title": "Save as PDF/A-2b (archival)",
+      "type": "boolean"
+     },
+     "one_page_per_sheet": {
+      "default": false,
+      "title": "Spreadsheets: each sheet on one page",
+      "type": "boolean",
+      "ui": {
+       "show_if": {
+        "input_formats": [
+         "xls",
+         "xlsx",
+         "ods",
+         "csv"
+        ]
+       }
+      }
+     }
+    },
+    "title": "FromOfficeOptions",
+    "type": "object"
+   }
+  },
+  {
+   "id": "pdf.to_pptx",
+   "title": "PDF to PowerPoint",
+   "summary": "Turn PDF pages into editable PowerPoint slides.",
+   "category": "Convert from PDF",
+   "slug": "to-pptx",
+   "inputs": [
+    "pdf"
+   ],
+   "min_files": 1,
+   "max_files": 3,
+   "limits": {
+    "max_mb": 200,
+    "max_pages": 200,
+    "max_files": 3
+   },
+   "lane": "docs",
+   "engine": "docs",
+   "options_schema": {
+    "additionalProperties": false,
+    "properties": {},
+    "title": "ToPptxOptions",
+    "type": "object"
+   }
+  },
+  {
+   "id": "pdf.rotate",
+   "title": "Rotate PDF",
+   "summary": "Turn pages the right way up — all of them, some, or only portrait or landscape ones.",
+   "category": "Edit",
+   "slug": "rotate",
+   "inputs": [
+    "pdf"
+   ],
+   "min_files": 1,
+   "max_files": 50,
+   "limits": {
+    "max_pages": 5000
+   },
+   "lane": "light",
+   "engine": "app",
+   "options_schema": {
+    "additionalProperties": false,
+    "properties": {
+     "angle": {
+      "default": 90,
+      "description": "Clockwise",
+      "enum": [
+       90,
+       180,
+       270
+      ],
+      "title": "Angle",
+      "type": "integer",
+      "ui": {
+       "labels": {
+        "180": "Upside down",
+        "270": "Left",
+        "90": "Right"
+       },
+       "widget": "segmented"
+      }
+     },
+     "pages": {
+      "default": "all",
+      "maxLength": 2000,
+      "title": "Pages",
+      "type": "string",
+      "ui": {
+       "widget": "pages"
+      }
+     },
+     "only": {
+      "default": "all",
+      "description": "Rotate only portrait or only landscape pages",
+      "enum": [
+       "all",
+       "portrait",
+       "landscape"
+      ],
+      "title": "Only",
+      "type": "string",
+      "ui": {
+       "widget": "segmented"
+      }
+     }
+    },
+    "title": "RotateOptions",
+    "type": "object"
+   }
+  },
+  {
+   "id": "pdf.page_numbers",
+   "title": "Add page numbers",
+   "summary": "Number pages in any corner, with your own format, font and starting number.",
+   "category": "Edit",
+   "slug": "page-numbers",
+   "inputs": [
+    "pdf"
+   ],
+   "min_files": 1,
+   "max_files": 20,
+   "limits": {
+    "max_pages": 5000
+   },
+   "lane": "light",
+   "engine": "app",
+   "options_schema": {
+    "additionalProperties": false,
+    "properties": {
+     "position": {
+      "default": "bottom-center",
+      "enum": [
+       "top-left",
+       "top-center",
+       "top-right",
+       "middle-left",
+       "middle-center",
+       "middle-right",
+       "bottom-left",
+       "bottom-center",
+       "bottom-right"
+      ],
+      "title": "Position",
+      "type": "string",
+      "ui": {
+       "widget": "position9"
+      }
+     },
+     "format": {
+      "default": "{n}",
+      "description": "Tokens: {n} number, {total} last number, {roman}/{ROMAN} numerals",
+      "maxLength": 120,
+      "minLength": 1,
+      "title": "Format",
+      "type": "string",
+      "ui": {
+       "choices": [
+        "{n}",
+        "Page {n}",
+        "{n} of {total}",
+        "Page {n} of {total}",
+        "{roman}"
+       ],
+       "widget": "combo"
+      }
+     },
+     "start": {
+      "default": 1,
+      "description": "First number",
+      "maximum": 1000000,
+      "minimum": 0,
+      "title": "Start",
+      "type": "integer",
+      "ui": {
+       "widget": "number"
+      }
+     },
+     "pages": {
+      "default": "all",
+      "description": "Pages that get a number",
+      "maxLength": 2000,
+      "title": "Pages",
+      "type": "string",
+      "ui": {
+       "widget": "pages"
+      }
+     },
+     "facing": {
+      "default": false,
+      "description": "Facing pages: mirror left/right positions",
+      "title": "Facing",
+      "type": "boolean",
+      "ui": {
+       "widget": "toggle"
+      }
+     },
+     "first_cover": {
+      "default": false,
+      "description": "First page is a cover",
+      "title": "First Cover",
+      "type": "boolean",
+      "ui": {
+       "show_if": {
+        "facing": true
+       },
+       "widget": "toggle"
+      }
+     },
+     "margin": {
+      "default": "medium",
+      "enum": [
+       "small",
+       "medium",
+       "big"
+      ],
+      "title": "Margin",
+      "type": "string",
+      "ui": {
+       "labels": {
+        "medium": "Recommended"
+       },
+       "widget": "segmented"
+      }
+     },
+     "font": {
+      "default": "helvetica",
+      "enum": [
+       "helvetica",
+       "times",
+       "courier",
+       "libre_franklin",
+       "fraunces",
+       "plex_mono",
+       "dejavu_sans",
+       "dejavu_serif",
+       "dejavu_mono",
+       "anton",
+       "caveat",
+       "dancing_script",
+       "great_vibes",
+       "homemade_apple"
+      ],
+      "title": "Font",
+      "type": "string",
+      "ui": {
+       "widget": "font"
+      }
+     },
+     "size": {
+      "default": 11,
+      "maximum": 96,
+      "minimum": 4,
+      "title": "Size",
+      "type": "number",
+      "ui": {
+       "unit": "pt",
+       "widget": "number"
+      }
+     },
+     "bold": {
+      "default": false,
+      "title": "Bold",
+      "type": "boolean",
+      "ui": {
+       "widget": "toggle"
+      }
+     },
+     "color": {
+      "default": "#000000",
+      "pattern": "^#(?:[0-9a-fA-F]{3}){1,2}$",
+      "title": "Color",
+      "type": "string",
+      "ui": {
+       "widget": "color"
+      }
+     }
+    },
+    "title": "PageNumbersOptions",
+    "type": "object"
+   }
+  },
+  {
+   "id": "pdf.watermark",
+   "title": "Add watermark",
+   "summary": "Stamp text or an image over (or under) your pages, once or as a tiled pattern.",
+   "category": "Edit",
+   "slug": "watermark",
+   "inputs": [
+    "pdf"
+   ],
+   "min_files": 1,
+   "max_files": 20,
+   "limits": {
+    "max_pages": 5000
+   },
+   "lane": "light",
+   "engine": "app",
+   "options_schema": {
+    "additionalProperties": false,
+    "properties": {
+     "kind": {
+      "default": "text",
+      "enum": [
+       "text",
+       "image"
+      ],
+      "title": "Kind",
+      "type": "string",
+      "ui": {
+       "widget": "segmented"
+      }
+     },
+     "text": {
+      "default": "CONFIDENTIAL",
+      "maxLength": 500,
+      "title": "Text",
+      "type": "string",
+      "ui": {
+       "show_if": {
+        "kind": "text"
+       },
+       "widget": "textarea"
+      }
+     },
+     "font": {
+      "default": "helvetica",
+      "enum": [
+       "helvetica",
+       "times",
+       "courier",
+       "libre_franklin",
+       "fraunces",
+       "plex_mono",
+       "dejavu_sans",
+       "dejavu_serif",
+       "dejavu_mono",
+       "anton",
+       "caveat",
+       "dancing_script",
+       "great_vibes",
+       "homemade_apple"
+      ],
+      "title": "Font",
+      "type": "string",
+      "ui": {
+       "show_if": {
+        "kind": "text"
+       },
+       "widget": "font"
+      }
+     },
+     "size": {
+      "default": 48,
+      "maximum": 500,
+      "minimum": 4,
+      "title": "Size",
+      "type": "number",
+      "ui": {
+       "show_if": {
+        "kind": "text"
+       },
+       "unit": "pt",
+       "widget": "number"
+      }
+     },
+     "bold": {
+      "default": true,
+      "title": "Bold",
+      "type": "boolean",
+      "ui": {
+       "show_if": {
+        "kind": "text"
+       },
+       "widget": "toggle"
+      }
+     },
+     "italic": {
+      "default": false,
+      "title": "Italic",
+      "type": "boolean",
+      "ui": {
+       "show_if": {
+        "kind": "text"
+       },
+       "widget": "toggle"
+      }
+     },
+     "color": {
+      "default": "#888888",
+      "pattern": "^#(?:[0-9a-fA-F]{3}){1,2}$",
+      "title": "Color",
+      "type": "string",
+      "ui": {
+       "show_if": {
+        "kind": "text"
+       },
+       "widget": "color"
+      }
+     },
+     "image_id": {
+      "anyOf": [
+       {
+        "pattern": "^[0-9a-f]{32}$",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "description": "An image uploaded with this job",
+      "title": "Image Id",
+      "ui": {
+       "accept": "image",
+       "show_if": {
+        "kind": "image"
+       },
+       "widget": "file"
+      }
+     },
+     "image_data": {
+      "anyOf": [
+       {
+        "maxLength": 12582912,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Image Data",
+      "ui": {
+       "widget": "hidden"
+      }
+     },
+     "image_scale": {
+      "default": 0.4,
+      "description": "Image width as a share of the page width",
+      "exclusiveMinimum": 0.01,
+      "maximum": 1.0,
+      "title": "Image Scale",
+      "type": "number",
+      "ui": {
+       "show_if": {
+        "kind": "image"
+       },
+       "step": 0.01,
+       "widget": "slider"
+      }
+     },
+     "opacity": {
+      "default": 1.0,
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Opacity",
+      "type": "number",
+      "ui": {
+       "choices": [
+        1.0,
+        0.75,
+        0.5,
+        0.25
+       ],
+       "labels": {
+        "0.25": "75%",
+        "0.5": "50%",
+        "0.75": "25%",
+        "1.0": "No transparency"
+       },
+       "widget": "segmented"
+      }
+     },
+     "rotation": {
+      "default": 0,
+      "description": "Counter-clockwise, degrees",
+      "maximum": 359,
+      "minimum": 0,
+      "title": "Rotation",
+      "type": "integer",
+      "ui": {
+       "choices": [
+        0,
+        45,
+        90,
+        180,
+        270
+       ],
+       "unit": "°",
+       "widget": "select"
+      }
+     },
+     "position": {
+      "default": "middle-center",
+      "enum": [
+       "top-left",
+       "top-center",
+       "top-right",
+       "middle-left",
+       "middle-center",
+       "middle-right",
+       "bottom-left",
+       "bottom-center",
+       "bottom-right"
+      ],
+      "title": "Position",
+      "type": "string",
+      "ui": {
+       "widget": "position9"
+      }
+     },
+     "mosaic": {
+      "default": false,
+      "description": "Tile across the page",
+      "title": "Mosaic",
+      "type": "boolean",
+      "ui": {
+       "widget": "toggle"
+      }
+     },
+     "layer": {
+      "default": "over",
+      "enum": [
+       "over",
+       "under"
+      ],
+      "title": "Layer",
+      "type": "string",
+      "ui": {
+       "labels": {
+        "over": "Over the content",
+        "under": "Below the content"
+       },
+       "widget": "segmented"
+      }
+     },
+     "pages": {
+      "default": "all",
+      "maxLength": 2000,
+      "title": "Pages",
+      "type": "string",
+      "ui": {
+       "widget": "pages"
+      }
+     },
+     "margin": {
+      "default": 36,
+      "maximum": 500,
+      "minimum": 0,
+      "title": "Margin",
+      "type": "number",
+      "ui": {
+       "unit": "pt",
+       "widget": "number"
+      }
+     }
+    },
+    "title": "WatermarkOptions",
+    "type": "object"
+   }
+  },
+  {
+   "id": "pdf.crop",
+   "title": "Crop PDF",
+   "summary": "Trim margins or cut pages down to the area you draw.",
+   "category": "Edit",
+   "slug": "crop",
+   "inputs": [
+    "pdf"
+   ],
+   "min_files": 1,
+   "max_files": 1,
+   "limits": {
+    "max_pages": 5000
+   },
+   "lane": "light",
+   "engine": "app",
+   "options_schema": {
+    "$defs": {
+     "FracRect": {
+      "additionalProperties": false,
+      "description": "A box on the visible page, as fractions of its width/height (origin top-left).",
+      "properties": {
+       "x": {
+        "maximum": 1.0,
+        "minimum": 0.0,
+        "title": "X",
+        "type": "number"
+       },
+       "y": {
+        "maximum": 1.0,
+        "minimum": 0.0,
+        "title": "Y",
+        "type": "number"
+       },
+       "w": {
+        "exclusiveMinimum": 0.0,
+        "maximum": 1.0,
+        "title": "W",
+        "type": "number"
+       },
+       "h": {
+        "exclusiveMinimum": 0.0,
+        "maximum": 1.0,
+        "title": "H",
+        "type": "number"
+       }
+      },
+      "required": [
+       "x",
+       "y",
+       "w",
+       "h"
+      ],
+      "title": "FracRect",
+      "type": "object"
+     }
+    },
+    "additionalProperties": false,
+    "properties": {
+     "mode": {
+      "default": "box",
+      "enum": [
+       "box",
+       "auto"
+      ],
+      "title": "Mode",
+      "type": "string",
+      "ui": {
+       "labels": {
+        "auto": "Trim margins",
+        "box": "Draw a box"
+       },
+       "widget": "segmented"
+      }
+     },
+     "box": {
+      "anyOf": [
+       {
+        "$ref": "#/$defs/FracRect"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "ui": {
+       "show_if": {
+        "mode": "box"
+       },
+       "widget": "canvas"
+      }
+     },
+     "pages": {
+      "default": "all",
+      "maxLength": 2000,
+      "title": "Pages",
+      "type": "string",
+      "ui": {
+       "widget": "pages"
+      }
+     },
+     "padding": {
+      "default": 6,
+      "maximum": 200,
+      "minimum": 0,
+      "title": "Padding",
+      "type": "number",
+      "ui": {
+       "show_if": {
+        "mode": "auto"
+       },
+       "unit": "pt",
+       "widget": "number"
+      }
+     },
+     "remove_outside": {
+      "default": false,
+      "description": "Also delete the content outside the box (a crop alone only hides it)",
+      "title": "Remove Outside",
+      "type": "boolean",
+      "ui": {
+       "widget": "toggle"
+      }
+     }
+    },
+    "title": "CropOptions",
+    "type": "object"
+   }
+  },
+  {
+   "id": "pdf.edit",
+   "title": "Edit PDF",
+   "summary": "Add text, images, shapes, highlights, white-out and drawings to any page.",
+   "category": "Edit",
+   "slug": "edit",
+   "inputs": [
+    "pdf"
+   ],
+   "min_files": 1,
+   "max_files": 1,
+   "limits": {
+    "max_pages": 5000
+   },
+   "lane": "light",
+   "engine": "app",
+   "options_schema": {
+    "$defs": {
+     "BoxShapeItem": {
+      "additionalProperties": false,
+      "properties": {
+       "x": {
+        "maximum": 1.0,
+        "minimum": 0.0,
+        "title": "X",
+        "type": "number"
+       },
+       "y": {
+        "maximum": 1.0,
+        "minimum": 0.0,
+        "title": "Y",
+        "type": "number"
+       },
+       "w": {
+        "exclusiveMinimum": 0.0,
+        "maximum": 1.0,
+        "title": "W",
+        "type": "number"
+       },
+       "h": {
+        "exclusiveMinimum": 0.0,
+        "maximum": 1.0,
+        "title": "H",
+        "type": "number"
+       },
+       "page": {
+        "maximum": 100000,
+        "minimum": 1,
+        "title": "Page",
+        "type": "integer"
+       },
+       "opacity": {
+        "default": 1.0,
+        "maximum": 1.0,
+        "minimum": 0.0,
+        "title": "Opacity",
+        "type": "number"
+       },
+       "type": {
+        "enum": [
+         "rect",
+         "ellipse",
+         "highlight",
+         "whiteout"
+        ],
+        "title": "Type",
+        "type": "string"
+       },
+       "stroke": {
+        "anyOf": [
+         {
+          "pattern": "^#(?:[0-9a-fA-F]{3}){1,2}$",
+          "type": "string"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "default": "#000000",
+        "title": "Stroke"
+       },
+       "fill": {
+        "anyOf": [
+         {
+          "pattern": "^#(?:[0-9a-fA-F]{3}){1,2}$",
+          "type": "string"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "default": null,
+        "title": "Fill"
+       },
+       "width": {
+        "default": 1.5,
+        "maximum": 50,
+        "minimum": 0,
+        "title": "Width",
+        "type": "number"
+       }
+      },
+      "required": [
+       "x",
+       "y",
+       "w",
+       "h",
+       "page",
+       "type"
+      ],
+      "title": "BoxShapeItem",
+      "type": "object"
+     },
+     "FreehandItem": {
+      "additionalProperties": false,
+      "properties": {
+       "page": {
+        "maximum": 100000,
+        "minimum": 1,
+        "title": "Page",
+        "type": "integer"
+       },
+       "opacity": {
+        "default": 1.0,
+        "maximum": 1.0,
+        "minimum": 0.0,
+        "title": "Opacity",
+        "type": "number"
+       },
+       "type": {
+        "const": "freehand",
+        "title": "Type",
+        "type": "string"
+       },
+       "strokes": {
+        "items": {
+         "items": {
+          "items": {
+           "maximum": 1.0,
+           "minimum": 0.0,
+           "type": "number"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "type": "array"
+         },
+         "maxItems": 5000,
+         "minItems": 2,
+         "type": "array"
+        },
+        "maxItems": 500,
+        "minItems": 1,
+        "title": "Strokes",
+        "type": "array"
+       },
+       "color": {
+        "default": "#000000",
+        "pattern": "^#(?:[0-9a-fA-F]{3}){1,2}$",
+        "title": "Color",
+        "type": "string"
+       },
+       "width": {
+        "default": 2,
+        "exclusiveMinimum": 0,
+        "maximum": 50,
+        "title": "Width",
+        "type": "number"
+       }
+      },
+      "required": [
+       "page",
+       "type",
+       "strokes"
+      ],
+      "title": "FreehandItem",
+      "type": "object"
+     },
+     "ImageItem": {
+      "additionalProperties": false,
+      "properties": {
+       "x": {
+        "maximum": 1.0,
+        "minimum": 0.0,
+        "title": "X",
+        "type": "number"
+       },
+       "y": {
+        "maximum": 1.0,
+        "minimum": 0.0,
+        "title": "Y",
+        "type": "number"
+       },
+       "w": {
+        "exclusiveMinimum": 0.0,
+        "maximum": 1.0,
+        "title": "W",
+        "type": "number"
+       },
+       "h": {
+        "exclusiveMinimum": 0.0,
+        "maximum": 1.0,
+        "title": "H",
+        "type": "number"
+       },
+       "page": {
+        "maximum": 100000,
+        "minimum": 1,
+        "title": "Page",
+        "type": "integer"
+       },
+       "opacity": {
+        "default": 1.0,
+        "maximum": 1.0,
+        "minimum": 0.0,
+        "title": "Opacity",
+        "type": "number"
+       },
+       "type": {
+        "const": "image",
+        "title": "Type",
+        "type": "string"
+       },
+       "image_id": {
+        "anyOf": [
+         {
+          "pattern": "^[0-9a-f]{32}$",
+          "type": "string"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "default": null,
+        "title": "Image Id"
+       },
+       "image_data": {
+        "anyOf": [
+         {
+          "maxLength": 12582912,
+          "type": "string"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "default": null,
+        "title": "Image Data"
+       },
+       "keep_ratio": {
+        "default": true,
+        "title": "Keep Ratio",
+        "type": "boolean"
+       },
+       "rotation": {
+        "default": 0,
+        "enum": [
+         0,
+         90,
+         180,
+         270
+        ],
+        "title": "Rotation",
+        "type": "integer"
+       }
+      },
+      "required": [
+       "x",
+       "y",
+       "w",
+       "h",
+       "page",
+       "type"
+      ],
+      "title": "ImageItem",
+      "type": "object"
+     },
+     "LineItem": {
+      "additionalProperties": false,
+      "properties": {
+       "page": {
+        "maximum": 100000,
+        "minimum": 1,
+        "title": "Page",
+        "type": "integer"
+       },
+       "opacity": {
+        "default": 1.0,
+        "maximum": 1.0,
+        "minimum": 0.0,
+        "title": "Opacity",
+        "type": "number"
+       },
+       "type": {
+        "enum": [
+         "line",
+         "arrow"
+        ],
+        "title": "Type",
+        "type": "string"
+       },
+       "points": {
+        "items": {
+         "items": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+         },
+         "maxItems": 2,
+         "minItems": 2,
+         "type": "array"
+        },
+        "maxItems": 2,
+        "minItems": 2,
+        "title": "Points",
+        "type": "array"
+       },
+       "stroke": {
+        "default": "#000000",
+        "pattern": "^#(?:[0-9a-fA-F]{3}){1,2}$",
+        "title": "Stroke",
+        "type": "string"
+       },
+       "width": {
+        "default": 2,
+        "exclusiveMinimum": 0,
+        "maximum": 50,
+        "title": "Width",
+        "type": "number"
+       }
+      },
+      "required": [
+       "page",
+       "type",
+       "points"
+      ],
+      "title": "LineItem",
+      "type": "object"
+     },
+     "TextItem": {
+      "additionalProperties": false,
+      "properties": {
+       "x": {
+        "maximum": 1.0,
+        "minimum": 0.0,
+        "title": "X",
+        "type": "number"
+       },
+       "y": {
+        "maximum": 1.0,
+        "minimum": 0.0,
+        "title": "Y",
+        "type": "number"
+       },
+       "w": {
+        "exclusiveMinimum": 0.0,
+        "maximum": 1.0,
+        "title": "W",
+        "type": "number"
+       },
+       "h": {
+        "exclusiveMinimum": 0.0,
+        "maximum": 1.0,
+        "title": "H",
+        "type": "number"
+       },
+       "page": {
+        "maximum": 100000,
+        "minimum": 1,
+        "title": "Page",
+        "type": "integer"
+       },
+       "opacity": {
+        "default": 1.0,
+        "maximum": 1.0,
+        "minimum": 0.0,
+        "title": "Opacity",
+        "type": "number"
+       },
+       "type": {
+        "const": "text",
+        "title": "Type",
+        "type": "string"
+       },
+       "text": {
+        "maxLength": 5000,
+        "title": "Text",
+        "type": "string"
+       },
+       "font": {
+        "default": "helvetica",
+        "enum": [
+         "helvetica",
+         "times",
+         "courier",
+         "libre_franklin",
+         "fraunces",
+         "plex_mono",
+         "dejavu_sans",
+         "dejavu_serif",
+         "dejavu_mono",
+         "anton",
+         "caveat",
+         "dancing_script",
+         "great_vibes",
+         "homemade_apple"
+        ],
+        "title": "Font",
+        "type": "string"
+       },
+       "size": {
+        "default": 12,
+        "maximum": 400,
+        "minimum": 2,
+        "title": "Size",
+        "type": "number"
+       },
+       "color": {
+        "default": "#000000",
+        "pattern": "^#(?:[0-9a-fA-F]{3}){1,2}$",
+        "title": "Color",
+        "type": "string"
+       },
+       "bold": {
+        "default": false,
+        "title": "Bold",
+        "type": "boolean"
+       },
+       "italic": {
+        "default": false,
+        "title": "Italic",
+        "type": "boolean"
+       },
+       "align": {
+        "default": "left",
+        "enum": [
+         "left",
+         "center",
+         "right"
+        ],
+        "title": "Align",
+        "type": "string"
+       },
+       "background": {
+        "anyOf": [
+         {
+          "pattern": "^#(?:[0-9a-fA-F]{3}){1,2}$",
+          "type": "string"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "default": null,
+        "title": "Background"
+       }
+      },
+      "required": [
+       "x",
+       "y",
+       "w",
+       "h",
+       "page",
+       "type",
+       "text"
+      ],
+      "title": "TextItem",
+      "type": "object"
+     }
+    },
+    "additionalProperties": false,
+    "properties": {
+     "items": {
+      "items": {
+       "discriminator": {
+        "mapping": {
+         "arrow": "#/$defs/LineItem",
+         "ellipse": "#/$defs/BoxShapeItem",
+         "freehand": "#/$defs/FreehandItem",
+         "highlight": "#/$defs/BoxShapeItem",
+         "image": "#/$defs/ImageItem",
+         "line": "#/$defs/LineItem",
+         "rect": "#/$defs/BoxShapeItem",
+         "text": "#/$defs/TextItem",
+         "whiteout": "#/$defs/BoxShapeItem"
+        },
+        "propertyName": "type"
+       },
+       "oneOf": [
+        {
+         "$ref": "#/$defs/TextItem"
+        },
+        {
+         "$ref": "#/$defs/ImageItem"
+        },
+        {
+         "$ref": "#/$defs/BoxShapeItem"
+        },
+        {
+         "$ref": "#/$defs/LineItem"
+        },
+        {
+         "$ref": "#/$defs/FreehandItem"
+        }
+       ]
+      },
+      "maxItems": 2000,
+      "minItems": 1,
+      "title": "Items",
+      "type": "array",
+      "ui": {
+       "widget": "canvas"
+      }
+     }
+    },
+    "required": [
+     "items"
+    ],
+    "title": "EditOptions",
+    "type": "object"
+   }
+  },
+  {
+   "id": "pdf.forms",
+   "title": "PDF forms",
+   "summary": "Fill in a form, add fields to a flat PDF (or let heypdf find the blanks) and flatten it.",
+   "category": "Edit",
+   "slug": "forms",
+   "inputs": [
+    "pdf"
+   ],
+   "min_files": 1,
+   "max_files": 1,
+   "limits": {
+    "max_pages": 2000
+   },
+   "lane": "light",
+   "engine": "app",
+   "options_schema": {
+    "$defs": {
+     "NewField": {
+      "additionalProperties": false,
+      "properties": {
+       "x": {
+        "maximum": 1.0,
+        "minimum": 0.0,
+        "title": "X",
+        "type": "number"
+       },
+       "y": {
+        "maximum": 1.0,
+        "minimum": 0.0,
+        "title": "Y",
+        "type": "number"
+       },
+       "w": {
+        "exclusiveMinimum": 0.0,
+        "maximum": 1.0,
+        "title": "W",
+        "type": "number"
+       },
+       "h": {
+        "exclusiveMinimum": 0.0,
+        "maximum": 1.0,
+        "title": "H",
+        "type": "number"
+       },
+       "type": {
+        "enum": [
+         "text",
+         "multiline",
+         "checkbox",
+         "radio",
+         "combo",
+         "list"
+        ],
+        "title": "Type",
+        "type": "string"
+       },
+       "page": {
+        "maximum": 100000,
+        "minimum": 1,
+        "title": "Page",
+        "type": "integer"
+       },
+       "name": {
+        "pattern": "^[\\w .\\-\\[\\]]{1,120}$",
+        "title": "Name",
+        "type": "string"
+       },
+       "label": {
+        "default": "",
+        "maxLength": 200,
+        "title": "Label",
+        "type": "string"
+       },
+       "options": {
+        "items": {
+         "maxLength": 200,
+         "type": "string"
+        },
+        "maxItems": 500,
+        "title": "Options",
+        "type": "array"
+       },
+       "value": {
+        "default": "",
+        "description": "Default text, or the on-value of a radio button",
+        "maxLength": 2000,
+        "title": "Value",
+        "type": "string"
+       },
+       "required": {
+        "default": false,
+        "title": "Required",
+        "type": "boolean"
+       },
+       "font_size": {
+        "default": 0,
+        "description": "0 = auto",
+        "maximum": 72,
+        "minimum": 0,
+        "title": "Font Size",
+        "type": "number"
+       }
+      },
+      "required": [
+       "x",
+       "y",
+       "w",
+       "h",
+       "type",
+       "page",
+       "name"
+      ],
+      "title": "NewField",
+      "type": "object"
+     }
+    },
+    "additionalProperties": false,
+    "properties": {
+     "values": {
+      "maxProperties": 5000,
+      "patternProperties": {
+       "^[\\w .\\-\\[\\]]{1,120}$": {
+        "anyOf": [
+         {
+          "type": "boolean"
+         },
+         {
+          "maxLength": 20000,
+          "type": "string"
+         },
+         {
+          "items": {
+           "maxLength": 2000,
+           "type": "string"
+          },
+          "maxItems": 500,
+          "type": "array"
+         }
+        ]
+       }
+      },
+      "title": "Values",
+      "type": "object",
+      "ui": {
+       "widget": "canvas"
+      }
+     },
+     "create": {
+      "items": {
+       "$ref": "#/$defs/NewField"
+      },
+      "maxItems": 1000,
+      "title": "Create",
+      "type": "array",
+      "ui": {
+       "widget": "canvas"
+      }
+     },
+     "detect": {
+      "default": false,
+      "description": "Create fields automatically where the page has blanks, lines and boxes",
+      "title": "Detect",
+      "type": "boolean",
+      "ui": {
+       "widget": "toggle"
+      }
+     },
+     "flatten": {
+      "default": false,
+      "description": "Make the filled form permanent (no longer editable)",
+      "title": "Flatten",
+      "type": "boolean",
+      "ui": {
+       "widget": "toggle"
+      }
+     }
+    },
+    "title": "FormsOptions",
+    "type": "object"
+   }
+  },
+  {
+   "id": "pdf.merge",
+   "title": "Merge PDF",
+   "summary": "Combine several PDFs into one, in the order you set.",
+   "category": "Organize",
+   "slug": "merge",
+   "inputs": [
+    "pdf"
+   ],
+   "min_files": 2,
+   "max_files": 50,
+   "limits": {
+    "max_pages": 5000,
+    "max_pages_total": 10000,
+    "max_total_mb": 1000
+   },
+   "lane": "light",
+   "engine": "app",
+   "options_schema": {
+    "additionalProperties": false,
+    "properties": {
+     "bookmarks": {
+      "default": "keep",
+      "description": "Keep each file's bookmarks, add one bookmark per file, or drop them",
+      "enum": [
+       "keep",
+       "per_file",
+       "none"
+      ],
+      "title": "Bookmarks",
+      "type": "string",
+      "ui": {
+       "labels": {
+        "keep": "Keep bookmarks",
+        "none": "None",
+        "per_file": "One per file"
+       },
+       "widget": "select"
+      }
+     }
+    },
+    "title": "MergeOptions",
+    "type": "object"
+   }
+  },
+  {
+   "id": "pdf.split",
+   "title": "Split PDF",
+   "summary": "Cut a PDF into parts: by page ranges, every N pages, every page or by file size.",
+   "category": "Organize",
+   "slug": "split",
+   "inputs": [
+    "pdf"
+   ],
+   "min_files": 1,
+   "max_files": 1,
+   "limits": {
+    "max_pages": 5000
+   },
+   "lane": "light",
+   "engine": "app",
+   "options_schema": {
+    "additionalProperties": false,
+    "properties": {
+     "mode": {
+      "default": "ranges",
+      "enum": [
+       "ranges",
+       "fixed",
+       "all",
+       "size"
+      ],
+      "title": "Mode",
+      "type": "string",
+      "ui": {
+       "labels": {
+        "all": "Every page",
+        "fixed": "Every N pages",
+        "ranges": "Custom ranges",
+        "size": "By size"
+       },
+       "widget": "segmented"
+      }
+     },
+     "ranges": {
+      "default": "1",
+      "description": "e.g. 1-3, 4, 5-last — one file per range",
+      "maxLength": 2000,
+      "title": "Ranges",
+      "type": "string",
+      "ui": {
+       "show_if": {
+        "mode": "ranges"
+       },
+       "widget": "pages"
+      }
+     },
+     "merge": {
+      "default": false,
+      "description": "Merge all ranges into one PDF",
+      "title": "Merge",
+      "type": "boolean",
+      "ui": {
+       "show_if": {
+        "mode": "ranges"
+       },
+       "widget": "toggle"
+      }
+     },
+     "every": {
+      "default": 2,
+      "description": "Pages per file",
+      "maximum": 10000,
+      "minimum": 1,
+      "title": "Every",
+      "type": "integer",
+      "ui": {
+       "show_if": {
+        "mode": "fixed"
+       },
+       "widget": "number"
+      }
+     },
+     "max_mb": {
+      "default": 1.0,
+      "description": "Largest size per file",
+      "exclusiveMinimum": 0.01,
+      "maximum": 2000,
+      "title": "Max Mb",
+      "type": "number",
+      "ui": {
+       "show_if": {
+        "mode": "size"
+       },
+       "step": 0.1,
+       "unit": "MB",
+       "widget": "number"
+      }
+     }
+    },
+    "title": "SplitOptions",
+    "type": "object"
+   }
+  },
+  {
+   "id": "pdf.remove_pages",
+   "title": "Remove pages",
+   "summary": "Delete the pages you don't need.",
+   "category": "Organize",
+   "slug": "remove-pages",
+   "inputs": [
+    "pdf"
+   ],
+   "min_files": 1,
+   "max_files": 1,
+   "limits": {
+    "max_pages": 5000
+   },
+   "lane": "light",
+   "engine": "app",
+   "options_schema": {
+    "additionalProperties": false,
+    "properties": {
+     "pages": {
+      "description": "Pages to remove, e.g. 2, 5-7",
+      "maxLength": 2000,
+      "minLength": 1,
+      "title": "Pages",
+      "type": "string",
+      "ui": {
+       "widget": "pages"
+      }
+     }
+    },
+    "required": [
+     "pages"
+    ],
+    "title": "RemovePagesOptions",
+    "type": "object"
+   }
+  },
+  {
+   "id": "pdf.extract_pages",
+   "title": "Extract pages",
+   "summary": "Take pages out of a PDF, as separate files or together in one.",
+   "category": "Organize",
+   "slug": "extract-pages",
+   "inputs": [
+    "pdf"
+   ],
+   "min_files": 1,
+   "max_files": 1,
+   "limits": {
+    "max_pages": 5000
+   },
+   "lane": "light",
+   "engine": "app",
+   "options_schema": {
+    "additionalProperties": false,
+    "properties": {
+     "pages": {
+      "default": "all",
+      "description": "Pages to extract, e.g. 1, 3-5 (all = every page)",
+      "maxLength": 2000,
+      "title": "Pages",
+      "type": "string",
+      "ui": {
+       "widget": "pages"
+      }
+     },
+     "merge": {
+      "default": false,
+      "description": "Put the extracted pages into one PDF",
+      "title": "Merge",
+      "type": "boolean",
+      "ui": {
+       "widget": "toggle"
+      }
+     }
+    },
+    "title": "ExtractPagesOptions",
+    "type": "object"
+   }
+  },
+  {
+   "id": "pdf.organize",
+   "title": "Organize PDF",
+   "summary": "Reorder, rotate, delete and insert pages — also pages from other PDFs and blank pages.",
+   "category": "Organize",
+   "slug": "organize",
+   "inputs": [
+    "pdf"
+   ],
+   "min_files": 1,
+   "max_files": 20,
+   "limits": {
+    "max_pages": 5000,
+    "max_pages_total": 10000,
+    "max_total_mb": 1000
+   },
+   "lane": "light",
+   "engine": "app",
+   "options_schema": {
+    "$defs": {
+     "OrganizePage": {
+      "additionalProperties": false,
+      "properties": {
+       "file": {
+        "default": 0,
+        "description": "Index of the source file in file_ids",
+        "maximum": 100,
+        "minimum": 0,
+        "title": "File",
+        "type": "integer"
+       },
+       "page": {
+        "anyOf": [
+         {
+          "maximum": 100000,
+          "minimum": 1,
+          "type": "integer"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "default": null,
+        "description": "1-based page of that file",
+        "title": "Page"
+       },
+       "rotate": {
+        "default": 0,
+        "description": "Extra clockwise rotation",
+        "enum": [
+         0,
+         90,
+         180,
+         270
+        ],
+        "title": "Rotate",
+        "type": "integer"
+       },
+       "blank": {
+        "default": false,
+        "description": "Insert a blank page instead",
+        "title": "Blank",
+        "type": "boolean"
+       }
+      },
+      "title": "OrganizePage",
+      "type": "object"
+     }
+    },
+    "additionalProperties": false,
+    "properties": {
+     "pages": {
+      "description": "The new document, page by page; leave empty to keep every page in order",
+      "items": {
+       "$ref": "#/$defs/OrganizePage"
+      },
+      "maxItems": 10000,
+      "title": "Pages",
+      "type": "array",
+      "ui": {
+       "widget": "canvas"
+      }
+     },
+     "blank_size": {
+      "default": "previous",
+      "enum": [
+       "previous",
+       "a4",
+       "letter"
+      ],
+      "title": "Blank Size",
+      "type": "string",
+      "ui": {
+       "labels": {
+        "a4": "A4",
+        "letter": "US Letter",
+        "previous": "Same as previous page"
+       },
+       "widget": "select"
+      }
+     }
+    },
+    "title": "OrganizeOptions",
+    "type": "object"
+   }
+  },
+  {
+   "id": "pdf.scan",
+   "title": "Scan to PDF",
+   "summary": "Turn photos of paper into a clean, straightened PDF — or send them from your phone.",
+   "category": "Organize",
+   "slug": "scan",
+   "inputs": [
+    "image"
+   ],
+   "min_files": 1,
+   "max_files": 100,
+   "limits": {
+    "max_mb": 30,
+    "memory_mb": 1024
+   },
+   "lane": "heavy",
+   "engine": "app",
+   "options_schema": {
+    "additionalProperties": false,
+    "properties": {
+     "page_size": {
+      "default": "a4",
+      "enum": [
+       "fit",
+       "a4",
+       "letter"
+      ],
+      "title": "Page Size",
+      "type": "string",
+      "ui": {
+       "labels": {
+        "a4": "A4",
+        "fit": "Fit (same as image)",
+        "letter": "US Letter"
+       },
+       "widget": "segmented"
+      }
+     },
+     "orientation": {
+      "default": "portrait",
+      "enum": [
+       "portrait",
+       "landscape",
+       "auto"
+      ],
+      "title": "Orientation",
+      "type": "string",
+      "ui": {
+       "show_if": {
+        "page_size": [
+         "a4",
+         "letter"
+        ]
+       },
+       "widget": "segmented"
+      }
+     },
+     "margin": {
+      "default": 0,
+      "enum": [
+       0,
+       20,
+       40
+      ],
+      "title": "Margin",
+      "type": "integer",
+      "ui": {
+       "labels": {
+        "0": "No margin",
+        "20": "Small",
+        "40": "Big"
+       },
+       "unit": "pt",
+       "widget": "segmented"
+      }
+     },
+     "merge": {
+      "default": true,
+      "description": "All images in one PDF",
+      "title": "Merge",
+      "type": "boolean",
+      "ui": {
+       "widget": "toggle"
+      }
+     },
+     "enhance": {
+      "default": "color",
+      "description": "Clean-up after straightening",
+      "enum": [
+       "color",
+       "gray",
+       "bw",
+       "none"
+      ],
+      "title": "Enhance",
+      "type": "string",
+      "ui": {
+       "labels": {
+        "bw": "Black & white",
+        "color": "Colour",
+        "gray": "Greyscale",
+        "none": "Original"
+       },
+       "widget": "segmented"
+      }
+     },
+     "detect": {
+      "default": true,
+      "description": "Find the document edges automatically",
+      "title": "Detect",
+      "type": "boolean",
+      "ui": {
+       "widget": "toggle"
+      }
+     },
+     "corners": {
+      "description": "Per image (in file order): 4 corner points as image fractions, or null",
+      "items": {
+       "anyOf": [
+        {
+         "items": {
+          "items": {
+           "maximum": 1.0,
+           "minimum": 0.0,
+           "type": "number"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "type": "array"
+         },
+         "maxItems": 4,
+         "minItems": 4,
+         "type": "array"
+        },
+        {
+         "type": "null"
+        }
+       ]
+      },
+      "maxItems": 200,
+      "title": "Corners",
+      "type": "array",
+      "ui": {
+       "widget": "canvas"
+      }
+     },
+     "rotate": {
+      "items": {
+       "enum": [
+        0,
+        90,
+        180,
+        270
+       ],
+       "type": "integer"
+      },
+      "maxItems": 200,
+      "title": "Rotate",
+      "type": "array",
+      "ui": {
+       "widget": "canvas"
+      }
+     }
+    },
+    "title": "ScanOptions",
+    "type": "object"
+   }
+  },
+  {
+   "id": "pdf.unlock",
+   "title": "Unlock PDF",
+   "summary": "Remove the password and restrictions from a PDF you have the password for.",
+   "category": "Security",
+   "slug": "unlock",
+   "inputs": [
+    "pdf"
+   ],
+   "min_files": 1,
+   "max_files": 20,
+   "limits": {
+    "max_pages": 5000
+   },
+   "lane": "light",
+   "engine": "app",
+   "options_schema": {
+    "additionalProperties": false,
+    "properties": {
+     "password": {
+      "anyOf": [
+       {
+        "maxLength": 256,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "description": "Only needed if the file asks for one to open",
+      "title": "Password",
+      "ui": {
+       "widget": "password"
+      }
+     }
+    },
+    "title": "UnlockOptions",
+    "type": "object"
+   }
+  },
+  {
+   "id": "pdf.protect",
+   "title": "Protect PDF",
+   "summary": "Encrypt a PDF with a password (AES-256) and limit printing, copying or editing.",
+   "category": "Security",
+   "slug": "protect",
+   "inputs": [
+    "pdf"
+   ],
+   "min_files": 1,
+   "max_files": 20,
+   "limits": {
+    "max_pages": 5000
+   },
+   "lane": "light",
+   "engine": "app",
+   "options_schema": {
+    "additionalProperties": false,
+    "properties": {
+     "password": {
+      "default": "",
+      "description": "Needed to open the file",
+      "maxLength": 256,
+      "title": "Password",
+      "type": "string",
+      "ui": {
+       "confirm": true,
+       "widget": "password"
+      }
+     },
+     "owner_password": {
+      "default": "",
+      "description": "Needed to change permissions (random if empty)",
+      "maxLength": 256,
+      "title": "Owner Password",
+      "type": "string",
+      "ui": {
+       "group": "advanced",
+       "widget": "password"
+      }
+     },
+     "allow_print": {
+      "default": true,
+      "title": "Allow Print",
+      "type": "boolean",
+      "ui": {
+       "group": "advanced",
+       "widget": "toggle"
+      }
+     },
+     "allow_modify": {
+      "default": true,
+      "title": "Allow Modify",
+      "type": "boolean",
+      "ui": {
+       "group": "advanced",
+       "widget": "toggle"
+      }
+     },
+     "allow_copy": {
+      "default": true,
+      "title": "Allow Copy",
+      "type": "boolean",
+      "ui": {
+       "group": "advanced",
+       "widget": "toggle"
+      }
+     },
+     "allow_annotate": {
+      "default": true,
+      "title": "Allow Annotate",
+      "type": "boolean",
+      "ui": {
+       "group": "advanced",
+       "widget": "toggle"
+      }
+     },
+     "allow_fill": {
+      "default": true,
+      "title": "Allow Fill",
+      "type": "boolean",
+      "ui": {
+       "group": "advanced",
+       "widget": "toggle"
+      }
+     },
+     "allow_accessibility": {
+      "default": true,
+      "title": "Allow Accessibility",
+      "type": "boolean",
+      "ui": {
+       "group": "advanced",
+       "widget": "toggle"
+      }
+     },
+     "allow_assembly": {
+      "default": true,
+      "title": "Allow Assembly",
+      "type": "boolean",
+      "ui": {
+       "group": "advanced",
+       "widget": "toggle"
+      }
+     }
+    },
+    "title": "ProtectOptions",
+    "type": "object"
+   }
+  },
+  {
+   "id": "pdf.sign",
+   "title": "Sign PDF",
+   "summary": "Type, draw or upload your signature and place it — optionally with a digital (PAdES) signature from your own certificate.",
+   "category": "Security",
+   "slug": "sign",
+   "inputs": [
+    "pdf",
+    "cert"
+   ],
+   "min_files": 1,
+   "max_files": 2,
+   "limits": {
+    "max_pages": 5000
+   },
+   "lane": "light",
+   "engine": "app",
+   "options_schema": {
+    "$defs": {
+     "Placement": {
+      "additionalProperties": false,
+      "properties": {
+       "x": {
+        "maximum": 1.0,
+        "minimum": 0.0,
+        "title": "X",
+        "type": "number"
+       },
+       "y": {
+        "maximum": 1.0,
+        "minimum": 0.0,
+        "title": "Y",
+        "type": "number"
+       },
+       "w": {
+        "exclusiveMinimum": 0.0,
+        "maximum": 1.0,
+        "title": "W",
+        "type": "number"
+       },
+       "h": {
+        "exclusiveMinimum": 0.0,
+        "maximum": 1.0,
+        "title": "H",
+        "type": "number"
+       },
+       "pages": {
+        "default": "1",
+        "description": "Where to place it: 1, last, all, 1-3 …",
+        "maxLength": 2000,
+        "minLength": 1,
+        "title": "Pages",
+        "type": "string"
+       }
+      },
+      "required": [
+       "x",
+       "y",
+       "w",
+       "h"
+      ],
+      "title": "Placement",
+      "type": "object"
+     },
+     "TextStamp": {
+      "additionalProperties": false,
+      "properties": {
+       "x": {
+        "maximum": 1.0,
+        "minimum": 0.0,
+        "title": "X",
+        "type": "number"
+       },
+       "y": {
+        "maximum": 1.0,
+        "minimum": 0.0,
+        "title": "Y",
+        "type": "number"
+       },
+       "w": {
+        "exclusiveMinimum": 0.0,
+        "maximum": 1.0,
+        "title": "W",
+        "type": "number"
+       },
+       "h": {
+        "exclusiveMinimum": 0.0,
+        "maximum": 1.0,
+        "title": "H",
+        "type": "number"
+       },
+       "pages": {
+        "default": "1",
+        "description": "Where to place it: 1, last, all, 1-3 …",
+        "maxLength": 2000,
+        "minLength": 1,
+        "title": "Pages",
+        "type": "string"
+       },
+       "text": {
+        "description": "Name, initials, a note … {date} is replaced by today's date",
+        "maxLength": 500,
+        "minLength": 1,
+        "title": "Text",
+        "type": "string"
+       },
+       "font": {
+        "default": "helvetica",
+        "enum": [
+         "helvetica",
+         "times",
+         "courier",
+         "libre_franklin",
+         "fraunces",
+         "plex_mono",
+         "dejavu_sans",
+         "dejavu_serif",
+         "dejavu_mono",
+         "anton",
+         "caveat",
+         "dancing_script",
+         "great_vibes",
+         "homemade_apple"
+        ],
+        "title": "Font",
+        "type": "string"
+       },
+       "size": {
+        "default": 11,
+        "maximum": 200,
+        "minimum": 4,
+        "title": "Size",
+        "type": "number"
+       },
+       "color": {
+        "default": "#000000",
+        "pattern": "^#(?:[0-9a-fA-F]{3}){1,2}$",
+        "title": "Color",
+        "type": "string"
+       }
+      },
+      "required": [
+       "x",
+       "y",
+       "w",
+       "h",
+       "text"
+      ],
+      "title": "TextStamp",
+      "type": "object"
+     }
+    },
+    "additionalProperties": false,
+    "properties": {
+     "style": {
+      "default": "type",
+      "description": "How the visible signature is made; none = digital signature only",
+      "enum": [
+       "type",
+       "draw",
+       "upload",
+       "none"
+      ],
+      "title": "Style",
+      "type": "string",
+      "ui": {
+       "widget": "segmented"
+      }
+     },
+     "text": {
+      "default": "",
+      "description": "Your name as it should appear",
+      "maxLength": 100,
+      "title": "Text",
+      "type": "string",
+      "ui": {
+       "show_if": {
+        "style": "type"
+       },
+       "widget": "text"
+      }
+     },
+     "font": {
+      "default": "dancing_script",
+      "enum": [
+       "dancing_script",
+       "great_vibes",
+       "caveat",
+       "homemade_apple"
+      ],
+      "title": "Font",
+      "type": "string",
+      "ui": {
+       "show_if": {
+        "style": "type"
+       },
+       "widget": "font"
+      }
+     },
+     "color": {
+      "default": "#555555",
+      "pattern": "^#(?:[0-9a-fA-F]{3}){1,2}$",
+      "title": "Color",
+      "type": "string",
+      "ui": {
+       "choices": [
+        "#555555",
+        "#007BFF",
+        "#DC3545",
+        "#28A745"
+       ],
+       "widget": "swatches"
+      }
+     },
+     "image_data": {
+      "anyOf": [
+       {
+        "maxLength": 12582912,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Image Data",
+      "ui": {
+       "widget": "hidden"
+      }
+     },
+     "image_id": {
+      "anyOf": [
+       {
+        "pattern": "^[0-9a-f]{32}$",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Image Id",
+      "ui": {
+       "accept": "image",
+       "show_if": {
+        "style": "upload"
+       },
+       "widget": "file"
+      }
+     },
+     "placements": {
+      "items": {
+       "$ref": "#/$defs/Placement"
+      },
+      "maxItems": 500,
+      "title": "Placements",
+      "type": "array",
+      "ui": {
+       "widget": "canvas"
+      }
+     },
+     "texts": {
+      "items": {
+       "$ref": "#/$defs/TextStamp"
+      },
+      "maxItems": 500,
+      "title": "Texts",
+      "type": "array",
+      "ui": {
+       "widget": "canvas"
+      }
+     },
+     "date_format": {
+      "default": "d-m-Y",
+      "enum": [
+       "d-m-Y",
+       "d/m/Y",
+       "Y-m-d",
+       "Y/m/d",
+       "m-d-Y",
+       "m/d/Y",
+       "d M Y"
+      ],
+      "title": "Date Format",
+      "type": "string",
+      "ui": {
+       "widget": "select"
+      }
+     },
+     "utc_offset_min": {
+      "default": 0,
+      "description": "The signer's UTC offset in minutes, so {date} is their local date (sent by the editor)",
+      "maximum": 840,
+      "minimum": -840,
+      "title": "Utc Offset Min",
+      "type": "integer",
+      "ui": {
+       "widget": "hidden"
+      }
+     },
+     "digital": {
+      "default": false,
+      "description": "Also add a cryptographic (PAdES) signature with your own .p12/.pfx certificate",
+      "title": "Digital",
+      "type": "boolean",
+      "ui": {
+       "widget": "toggle"
+      }
+     },
+     "cert_password": {
+      "default": "",
+      "maxLength": 256,
+      "title": "Cert Password",
+      "type": "string",
+      "ui": {
+       "show_if": {
+        "digital": true
+       },
+       "widget": "password"
+      }
+     },
+     "reason": {
+      "default": "",
+      "maxLength": 200,
+      "title": "Reason",
+      "type": "string",
+      "ui": {
+       "show_if": {
+        "digital": true
+       },
+       "widget": "text"
+      }
+     },
+     "location": {
+      "default": "",
+      "maxLength": 200,
+      "title": "Location",
+      "type": "string",
+      "ui": {
+       "show_if": {
+        "digital": true
+       },
+       "widget": "text"
+      }
+     },
+     "contact": {
+      "default": "",
+      "maxLength": 200,
+      "title": "Contact",
+      "type": "string",
+      "ui": {
+       "show_if": {
+        "digital": true
+       },
+       "widget": "text"
+      }
+     }
+    },
+    "title": "SignOptions",
+    "type": "object"
+   }
+  },
+  {
+   "id": "pdf.redact",
+   "title": "Redact PDF",
+   "summary": "Permanently remove text, numbers and areas — really gone, not just covered up.",
+   "category": "Security",
+   "slug": "redact",
+   "inputs": [
+    "pdf"
+   ],
+   "min_files": 1,
+   "max_files": 1,
+   "limits": {
+    "max_pages": 2000
+   },
+   "lane": "light",
+   "engine": "app",
+   "options_schema": {
+    "$defs": {
+     "PageBox": {
+      "additionalProperties": false,
+      "properties": {
+       "x": {
+        "maximum": 1.0,
+        "minimum": 0.0,
+        "title": "X",
+        "type": "number"
+       },
+       "y": {
+        "maximum": 1.0,
+        "minimum": 0.0,
+        "title": "Y",
+        "type": "number"
+       },
+       "w": {
+        "exclusiveMinimum": 0.0,
+        "maximum": 1.0,
+        "title": "W",
+        "type": "number"
+       },
+       "h": {
+        "exclusiveMinimum": 0.0,
+        "maximum": 1.0,
+        "title": "H",
+        "type": "number"
+       },
+       "page": {
+        "maximum": 100000,
+        "minimum": 1,
+        "title": "Page",
+        "type": "integer"
+       }
+      },
+      "required": [
+       "x",
+       "y",
+       "w",
+       "h",
+       "page"
+      ],
+      "title": "PageBox",
+      "type": "object"
+     }
+    },
+    "additionalProperties": false,
+    "properties": {
+     "terms": {
+      "items": {
+       "maxLength": 200,
+       "minLength": 1,
+       "type": "string"
+      },
+      "maxItems": 200,
+      "title": "Terms",
+      "type": "array",
+      "ui": {
+       "widget": "tags"
+      }
+     },
+     "presets": {
+      "items": {
+       "enum": [
+        "email",
+        "phone",
+        "card",
+        "iban",
+        "ssn",
+        "ipv4",
+        "url",
+        "date",
+        "aadhaar",
+        "pan"
+       ],
+       "type": "string"
+      },
+      "maxItems": 10,
+      "title": "Presets",
+      "type": "array",
+      "ui": {
+       "labels": {
+        "aadhaar": "Aadhaar numbers",
+        "card": "Card numbers",
+        "date": "Dates",
+        "email": "Emails",
+        "iban": "IBANs",
+        "ipv4": "IP addresses",
+        "pan": "PAN (India)",
+        "phone": "Phone numbers",
+        "ssn": "US SSNs",
+        "url": "Links"
+       },
+       "widget": "checks"
+      }
+     },
+     "regex": {
+      "items": {
+       "maxLength": 200,
+       "minLength": 1,
+       "type": "string"
+      },
+      "maxItems": 20,
+      "title": "Regex",
+      "type": "array",
+      "ui": {
+       "group": "advanced",
+       "widget": "tags"
+      }
+     },
+     "case_sensitive": {
+      "default": false,
+      "title": "Case Sensitive",
+      "type": "boolean",
+      "ui": {
+       "group": "advanced",
+       "widget": "toggle"
+      }
+     },
+     "whole_words": {
+      "default": false,
+      "title": "Whole Words",
+      "type": "boolean",
+      "ui": {
+       "group": "advanced",
+       "widget": "toggle"
+      }
+     },
+     "pages": {
+      "default": "all",
+      "maxLength": 2000,
+      "title": "Pages",
+      "type": "string",
+      "ui": {
+       "widget": "pages"
+      }
+     },
+     "areas": {
+      "items": {
+       "$ref": "#/$defs/PageBox"
+      },
+      "maxItems": 10000,
+      "title": "Areas",
+      "type": "array",
+      "ui": {
+       "widget": "canvas"
+      }
+     },
+     "full_pages": {
+      "default": "",
+      "description": "Black out these pages completely",
+      "maxLength": 2000,
+      "title": "Full Pages",
+      "type": "string",
+      "ui": {
+       "widget": "pages"
+      }
+     },
+     "fill": {
+      "default": "#000000",
+      "pattern": "^#(?:[0-9a-fA-F]{3}){1,2}$",
+      "title": "Fill",
+      "type": "string",
+      "ui": {
+       "widget": "color"
+      }
+     },
+     "label": {
+      "default": "",
+      "description": "Text shown on each box, e.g. REDACTED",
+      "maxLength": 60,
+      "title": "Label",
+      "type": "string",
+      "ui": {
+       "widget": "text"
+      }
+     },
+     "images": {
+      "default": "pixels",
+      "description": "Blank the covered pixels, or remove touched images entirely",
+      "enum": [
+       "pixels",
+       "remove"
+      ],
+      "title": "Images",
+      "type": "string",
+      "ui": {
+       "group": "advanced",
+       "widget": "segmented"
+      }
+     },
+     "graphics": {
+      "default": "covered",
+      "description": "Vector graphics under a drawn box: remove only those it fully covers, or every one it touches — which also removes page backgrounds, table fills, banners and borders that reach into the box (text on them may become invisible)",
+      "enum": [
+       "covered",
+       "touched"
+      ],
+      "title": "Graphics",
+      "type": "string",
+      "ui": {
+       "group": "advanced",
+       "labels": {
+        "covered": "Fully covered",
+        "touched": "Everything touched"
+       },
+       "widget": "segmented"
+      }
+     },
+     "sanitize": {
+      "default": true,
+      "description": "Also remove metadata, attachments, scripts and thumbnails",
+      "title": "Sanitize",
+      "type": "boolean",
+      "ui": {
+       "widget": "toggle"
+      }
+     },
+     "remove_hidden_text": {
+      "default": false,
+      "description": "Remove invisible text (e.g. an OCR layer) everywhere",
+      "title": "Remove Hidden Text",
+      "type": "boolean",
+      "ui": {
+       "group": "advanced",
+       "widget": "toggle"
+      }
+     }
+    },
+    "title": "RedactOptions",
+    "type": "object"
+   }
+  },
+  {
+   "id": "pdf.compare",
+   "title": "Compare PDF",
+   "summary": "See what changed between two versions: word by word, or as a visual overlay.",
+   "category": "Security",
+   "slug": "compare",
+   "inputs": [
+    "pdf"
+   ],
+   "min_files": 2,
+   "max_files": 2,
+   "limits": {
+    "max_pages": 500,
+    "memory_mb": 1024
+   },
+   "lane": "heavy",
+   "engine": "app",
+   "options_schema": {
+    "additionalProperties": false,
+    "properties": {
+     "mode": {
+      "default": "text",
+      "enum": [
+       "text",
+       "overlay"
+      ],
+      "title": "Mode",
+      "type": "string",
+      "ui": {
+       "labels": {
+        "overlay": "Visual overlay",
+        "text": "Text changes"
+       },
+       "widget": "segmented"
+      }
+     },
+     "page_a": {
+      "anyOf": [
+       {
+        "maximum": 100000,
+        "minimum": 1,
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "description": "Overlay: page of the first file (all if empty)",
+      "title": "Page A",
+      "ui": {
+       "show_if": {
+        "mode": "overlay"
+       },
+       "widget": "number"
+      }
+     },
+     "page_b": {
+      "anyOf": [
+       {
+        "maximum": 100000,
+        "minimum": 1,
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Page B",
+      "ui": {
+       "show_if": {
+        "mode": "overlay"
+       },
+       "widget": "number"
+      }
+     },
+     "ignore_case": {
+      "default": false,
+      "title": "Ignore Case",
+      "type": "boolean",
+      "ui": {
+       "show_if": {
+        "mode": "text"
+       },
+       "widget": "toggle"
+      }
+     },
+     "sensitivity": {
+      "default": 40,
+      "description": "Overlay: pixel difference treated as a change",
+      "maximum": 200,
+      "minimum": 5,
+      "title": "Sensitivity",
+      "type": "integer",
+      "ui": {
+       "group": "advanced",
+       "show_if": {
+        "mode": "overlay"
+       },
+       "widget": "slider"
+      }
+     },
+     "report": {
+      "default": true,
+      "description": "Produce a downloadable PDF report",
+      "title": "Report",
+      "type": "boolean",
+      "ui": {
+       "widget": "toggle"
+      }
+     }
+    },
+    "title": "CompareOptions",
+    "type": "object"
+   }
+  },
+  {
+   "id": "pdf.from_html",
+   "title": "HTML to PDF",
+   "summary": "Save a web page — or an HTML file — as a PDF, as one long page or split into printable pages.",
+   "category": "Convert to PDF",
+   "slug": "from-html",
+   "inputs": [
+    "html"
+   ],
+   "min_files": 0,
+   "max_files": 1,
+   "limits": {
+    "max_mb": 5
+   },
+   "lane": "render",
+   "engine": "renderer",
+   "options_schema": {
+    "additionalProperties": false,
+    "properties": {
+     "url": {
+      "default": "",
+      "description": "Leave empty to capture an uploaded HTML file instead",
+      "maxLength": 2048,
+      "title": "Web page address",
+      "type": "string",
+      "ui": {
+       "placeholder": "https://example.com",
+       "widget": "url"
+      }
+     },
+     "width": {
+      "default": 1440,
+      "enum": [
+       1920,
+       1440,
+       1200,
+       768,
+       390
+      ],
+      "title": "Screen width",
+      "type": "integer",
+      "ui": {
+       "labels": {
+        "1200": "Laptop (1200 px)",
+        "1440": "Desktop (1440 px)",
+        "1920": "Desktop HD (1920 px)",
+        "390": "Mobile (390 px)",
+        "768": "Tablet (768 px)"
+       },
+       "unit": "px",
+       "widget": "select"
+      }
+     },
+     "block_cookie_banners": {
+      "default": true,
+      "title": "Hide cookie banners and pop-ups",
+      "type": "boolean"
+     },
+     "javascript": {
+      "default": true,
+      "title": "Run the page's scripts",
+      "type": "boolean"
+     },
+     "delay": {
+      "default": 0,
+      "maximum": 10,
+      "minimum": 0,
+      "title": "Wait before capturing",
+      "type": "number",
+      "ui": {
+       "step": 0.5,
+       "unit": "s",
+       "widget": "slider"
+      }
+     },
+     "page_size": {
+      "default": "A4",
+      "enum": [
+       "A4",
+       "Letter",
+       "A3",
+       "A5",
+       "Legal"
+      ],
+      "title": "Page size",
+      "type": "string",
+      "ui": {
+       "widget": "select"
+      }
+     },
+     "orientation": {
+      "default": "portrait",
+      "enum": [
+       "portrait",
+       "landscape"
+      ],
+      "title": "Orientation",
+      "type": "string",
+      "ui": {
+       "labels": {
+        "landscape": "Landscape",
+        "portrait": "Portrait"
+       },
+       "widget": "segmented"
+      }
+     },
+     "margin": {
+      "default": "none",
+      "enum": [
+       "none",
+       "small",
+       "big"
+      ],
+      "title": "Margins",
+      "type": "string",
+      "ui": {
+       "labels": {
+        "big": "Big (20 mm)",
+        "none": "None",
+        "small": "Small (10 mm)"
+       },
+       "widget": "segmented"
+      }
+     },
+     "single_page": {
+      "default": true,
+      "description": "Keep the page as one continuous sheet, as it looks on screen",
+      "title": "One long page",
+      "type": "boolean"
+     },
+     "background": {
+      "default": true,
+      "title": "Print backgrounds and colours",
+      "type": "boolean"
+     }
+    },
+    "title": "HtmlToPdfOptions",
+    "type": "object"
+   }
+  }
+ ]
+}

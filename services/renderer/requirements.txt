@@ -1,0 +1,6 @@
+# heypdf-renderer (top level, human-edited). The image installs the hash-checked requirements.lock;
+# regenerate it with services/lock.sh after editing this file. Every pin must be >= 14 days old:
+# playwright 1.63.0 (2026-09-15, Chromium 153). 1.64.0 (2026-10-13) becomes eligible on 2026-10-27.
+playwright==1.63.0
+fastapi==0.142.2          # newest release >= 14 days old (0.143.x is newer)
+uvicorn==0.54.0

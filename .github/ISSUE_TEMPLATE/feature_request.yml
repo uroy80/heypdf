@@ -1,0 +1,21 @@
+name: Feature request
+description: Suggest a tool or an improvement
+labels: [feature]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: The job to be done, e.g. "shrink a scanned PDF under 2 MB for a visa form".
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would help?
+  - type: checkboxes
+    id: local
+    attributes:
+      label: Privacy
+      options:
+        - label: This can work without sending files to any third-party service

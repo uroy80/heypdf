@@ -1,0 +1,21 @@
+# Allowlist: the build context holds only what the Dockerfile COPYs (tests/ and docs are bind-mounted
+# or not needed). Add a line here when the Dockerfile starts copying something new. The services/* images
+# use their own directories as build contexts.
+*
+!app/
+!static/
+!legal/
+!CREDITS.md
+!LICENSE
+!requirements.lock
+!requirements-dev.lock
+
+# ...and never junk from inside those: dotfiles (.DS_Store, ._AppleDouble, .env, editor swap files),
+# backups and bytecode.
+**/.*
+**/*~
+**/__pycache__
+**/*.py[cod]
+
+# The UI's node unit tests are never served.
+static/tests/

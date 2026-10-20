@@ -1,0 +1,2 @@
+# The egress proxy itself is stdlib-only; this is only for its test image.
+pytest==9.1.1
