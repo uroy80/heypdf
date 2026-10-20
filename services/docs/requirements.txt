@@ -1,8 +1,8 @@
 # heypdf-docs worker (top level, human-edited). The image installs the hash-checked requirements.lock;
 # regenerate it with services/lock.sh after editing this file. Every pin must be >= 14 days old.
 ocrmypdf==17.13.0          # MPL-2.0 — OCR (Tesseract) and PDF/A (Ghostscript backend)
-pikepdf==10.16.0           # MPL-2.0 — structure checks, decryption, repair (also an OCRmyPDF dependency)
+pikepdf==10.17.0           # MPL-2.0 — structure checks, decryption, repair (also an OCRmyPDF dependency)
 msoffcrypto-tool==6.0.0    # MIT — detects/decrypts password-protected Office files (user-supplied password only)
-fastapi==0.142.2          # newest release >= 14 days old (0.143.x is newer)
+fastapi==0.143.0          # newest release >= 14 days old (0.143.x is newer)
 uvicorn==0.54.0
 python-multipart==0.0.32
