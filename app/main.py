@@ -113,6 +113,7 @@ class SecurityHeadersMiddleware:
         """
         is_api = path.startswith("/api/") or path == "/openapi.json" or path in DOCS_PATHS
         cache = next((v for k, v in existing if k.lower() == b"cache-control"), None)
+        ctype = next((v for k, v in existing if k.lower() == b"content-type"), b"")
         headers = [(k, v) for k, v in existing if k.lower() not in _HEADER_NAMES]
         csp = CSP + "; sandbox" if DOWNLOAD_PATH_RE.match(path) else CSP
         if not (self.docs and path in DOCS_PATHS):
@@ -124,6 +125,10 @@ class SecurityHeadersMiddleware:
             cache = b"no-store"
         elif not is_api and cache is None:
             cache = b"no-cache"
+        if cache is not None and ctype.lower().startswith(b"text/html") and b"no-transform" not in cache.lower():
+            # A CDN in front (Cloudflare's email obfuscation, Rocket Loader, …) must not rewrite pages: /privacy
+            # promises that no third-party script runs on them. HTML only, so CDN compression of assets stays.
+            cache += b", no-transform"
         if cache is not None:
             headers.append((b"cache-control", cache))
         return headers

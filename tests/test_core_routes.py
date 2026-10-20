@@ -321,3 +321,13 @@ def test_hard_ttl_applies_in_hosted_mode(make_client):
     data["hard_deadline"] = time.time() - 1
     meta.write_text(json.dumps(data))
     assert c.get(f"/api/files/{f['id']}").status_code == 404  # gone at its hard deadline, however active
+
+
+def test_html_pages_forbid_cdn_rewriting(client):
+    """A CDN must not inject scripts into pages (/privacy says none run): HTML carries no-transform, assets don't."""
+    for path in ("/", "/privacy", "/terms"):
+        r = client.get(path)
+        assert r.status_code == 200, path
+        assert "no-transform" in r.headers["cache-control"], path
+    css = client.get("/styles.css")
+    assert "no-transform" not in css.headers.get("cache-control", "")
