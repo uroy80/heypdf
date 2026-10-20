@@ -16,7 +16,7 @@ import { session, pageCountOf } from '../session.js';
 import { slugOf, toolPath } from '../router.js';
 import { fileThumb, fileFacts, openPagesDialog, progressBar } from '../components.js';
 import { loadView } from './index.js';
-import { privacyLine, aiEnabled, aiProvider, offLine, safeUrl } from '../copy.js';
+import { aiEnabled, aiProvider, offShort, safeUrl } from '../copy.js';
 import { pageGrid } from './pagegrid.js';
 import { uploadBatches } from '../uploads.js';
 
@@ -42,11 +42,6 @@ function maxUploadBytes(config, tool) {
   return Number.isFinite(mb) ? mb * 1024 * 1024 : Infinity;
 }
 
-function elapsed(ms) {
-  const s = ms / 1000;
-  return s < 10 ? `${s.toFixed(1)} s` : s < 90 ? `${Math.round(s)} s` : `${Math.round(s / 60)} min`;
-}
-
 function aiNoticeSeen() {
   try {
     return localStorage.getItem(AI_OK_KEY) === '1';
@@ -68,10 +63,10 @@ function confirmAI(config, notice) {
     const ok = h('button', { type: 'button', class: 'btn btn-primary' }, 'Send and continue');
     const no = h('button', { type: 'button', class: 'btn' }, 'Cancel');
     const dlg = h('dialog', { class: 'dialog ai-dialog', 'aria-labelledby': 'ai-dlg-title' },
-      h('div', { class: 'dialog-head' }, h('h2', { id: 'ai-dlg-title' }, 'Before we send anything')),
+      h('div', { class: 'dialog-head' }, h('h2', { id: 'ai-dlg-title' }, `Send the text to ${aiProvider(config)}?`)),
       h('div', { class: 'dialog-body' },
-        h('p', {}, notice || `This tool sends the text extracted from your PDF to ${config?.ai?.provider || 'Anthropic'}’s Claude API to write the result. The file itself and its images are not sent.`),
-        h('p', {}, 'The output is AI-generated: check important facts before you rely on it.'),
+        h('p', {}, notice || `Only the PDF’s text goes to ${aiProvider(config)}’s Claude API — not the file or its images.`),
+        h('p', {}, 'AI can make mistakes: check important facts.'),
         h('p', { class: 'muted' }, h('a', { href: '/privacy', target: '_blank', rel: 'noopener' }, 'Privacy policy')),
         h('div', { class: 'btn-row dialog-actions' }, no, ok)));
     const done = (v) => {
@@ -137,28 +132,21 @@ export async function mountTool(root, env) {
     h('span', { class: 'work-meta', id: 'work-meta', 'aria-live': 'polite' }));
   const work = h('section', { class: 'desk-work', 'aria-label': `${tool.title}: files and preview` }, workHead, workBody);
 
-  const fine = [];
-  if (takesFiles) fine.push(`Takes ${describeInputs(tool)}`);
-  if (takesFiles) fine.push(shownMax === 1 ? 'one file' : minFiles > 1 && minFiles === shownMax ? `${minFiles} files` : `${minFiles > 1 ? `${minFiles}–` : 'up to '}${shownMax} files`);
-  if (tool.limits?.max_pages) fine.push(`up to ${tool.limits.max_pages} pages`);
+  // what the tool takes, in one compact line under the upload area (formats, count, size)
+  const fileCount = shownMax === 1 ? 'one file' : minFiles > 1 && minFiles === shownMax ? `${minFiles} files` : `${minFiles > 1 ? `${minFiles}–` : 'up to '}${shownMax} files`;
   const head = h('header', { class: 'tool-head' },
-    h('p', { class: 'tool-kicker' }, tool.category || 'Tool'),
     h('h1', { class: 'tool-title', id: 'tool-title', tabindex: '-1' }, tool.title),
-    tool.summary ? h('p', { class: 'tool-desc' }, tool.summary) : null,
-    fine.length ? h('p', { class: 'tool-fine' }, fine.join(' · ')) : null);
-  const offNote = tool.available === false
-    ? h('p', { class: 'note note-warn' }, icon('alert', 15), h('span', {}, `${offLine(tool)}.`))
-    : null;
+    tool.summary ? h('p', { class: 'tool-desc' }, tool.summary) : null);
   const viewPanel = h('div', { class: 'view-panel' });
   const formHost = h('div', { class: 'form-host' });
   const runBtn = h('button', { type: 'button', class: 'btn btn-primary btn-block run-btn' });
   const runHint = h('p', { class: 'run-hint', 'aria-live': 'polite' });
   const runErr = h('div', { class: 'run-error', role: 'alert', hidden: true });
   // only when AI is actually on here: otherwise nothing is sent, and the privacy policy has no AI section
-  const aiLine = isAI && aiEnabled(config) ? h('p', { class: 'ai-line' }, glyph('sparkle', 14), h('span', {}, `Sends the PDF’s text to ${aiProvider(config)} · `), h('a', { href: '/privacy', target: '_blank', rel: 'noopener' }, 'privacy')) : null;
+  const aiLine = isAI && aiEnabled(config) ? h('p', { class: 'ai-line' }, glyph('sparkle', 14), h('span', {}, `Text goes to ${aiProvider(config)} · `), h('a', { href: '/privacy', target: '_blank', rel: 'noopener' }, 'privacy')) : null;
   const runBox = h('div', { class: 'run-box' }, runErr, aiLine, runBtn, runHint);
   const side = h('aside', { class: 'side', 'aria-labelledby': 'tool-title' },
-    h('div', { class: 'side-body' }, head, offNote, viewPanel, formHost), runBox);
+    h('div', { class: 'side-body' }, head, viewPanel, formHost), runBox);
   const desk = h('div', { class: `desk tool-${slugOf(tool.id)}` }, work, side);
   root.replaceChildren(desk);
 
@@ -242,7 +230,6 @@ export async function mountTool(root, env) {
   const vp = view?.panel?.();
   if (vp) viewPanel.append(vp);
   else viewPanel.remove();
-  if (!descs.some((d) => form.has(d.key)) && !vp) formHost.append(h('p', { class: 'hint pf-none' }, 'No settings needed — just run it.'));
 
   // ── files ─────────────────────────────────────────────────────────────────
   function pickOne(accept) {
@@ -300,11 +287,11 @@ export async function mountTool(root, env) {
     let incoming = [...list];
     const room = maxFiles - st.files.filter((f) => !f.error).length;
     if (room <= 0) {
-      toast(maxFiles === 1 ? `${tool.title} works on one file at a time — remove the current one first` : `${tool.title} takes at most ${maxFiles} files`, 'warn');
+      toast(maxFiles === 1 ? 'One file at a time — remove the current one first' : `${tool.title} takes at most ${maxFiles} files`, 'warn');
       return;
     }
     if (incoming.length > room) {
-      toast(`Only the first ${plural(room, 'file')} were added — ${tool.title} takes at most ${maxFiles}`, 'warn');
+      toast(`Added the first ${plural(room, 'file')} — the limit is ${maxFiles}`, 'warn');
       incoming = incoming.slice(0, room);
     }
     const entries = incoming.map((file) => {
@@ -409,7 +396,7 @@ export async function mountTool(root, env) {
         render();
       }).catch((err) => {
         if (err.status === 404) {
-          e.error = 'This file has expired — upload it again';
+          e.error = 'This file is gone — upload it again';
           render();
         }
       });
@@ -455,16 +442,14 @@ export async function mountTool(root, env) {
     const off = tool.available === false;
     // phones and tablets can't drag files onto the page: don't tell them to
     const touch = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+    // one headline, the button, one compact line of formats — the side panel names the tool
     return h('div', { class: `dropzone pdf-drop${off ? ' is-off' : ''}`, role: 'group', 'aria-label': 'Add files' },
       h('div', { class: 'dz-inner' },
-        h('p', { class: 'dz-kicker' }, `${tool.category || 'heypdf'} · ${tool.title}`),
-        h('h2', { class: 'dz-title' }, off ? 'Not on this server' : minFiles === 0 ? 'Fill in the options →' : touch ? `Add ${inputNoun(tool, many)}` : `Drop ${inputNoun(tool, many)} here`),
-        h('p', { class: 'dz-lede' }, off ? (tool.reason || 'This tool is switched off here.') : tool.summary || ''),
+        h('h2', { class: 'dz-title' }, off ? 'Not available' : minFiles === 0 ? 'Enter a web address' : touch ? `Add ${inputNoun(tool, many)}` : `Drop ${inputNoun(tool, many)} here`),
+        off && offShort(tool).why ? h('p', { class: 'dz-lede' }, offShort(tool).why) : null,
         off ? null : h('p', { class: 'dz-sub' },
-          h('button', { type: 'button', class: `btn${minFiles === 0 ? '' : ' btn-primary'}`, onclick: () => fileInput.click() }, many ? `Choose ${inputNoun(tool, true)}` : `Choose ${inputNoun(tool, false)}`),
-          minFiles === 0 ? h('span', { class: 'dz-or' }, `— optional: ${describeInputs(tool)}`) : touch ? null : h('span', { class: 'dz-or' }, 'or drag them onto this page')),
-        off ? null : h('p', { class: 'dz-formats' }, [describeInputs(tool), many ? `up to ${shownMax} files` : 'one file', Number.isFinite(limit) ? `${fmtBytes(limit)} each` : null].filter(Boolean).join(' · ')),
-        off ? null : privacyNote()));
+          h('button', { type: 'button', class: `btn${minFiles === 0 ? '' : ' btn-primary'}`, onclick: () => fileInput.click() }, minFiles === 0 ? `Or choose ${inputNoun(tool, false)}` : many ? `Choose ${inputNoun(tool, true)}` : `Choose ${inputNoun(tool, false)}`)),
+        off ? null : h('p', { class: 'dz-formats' }, [describeInputs(tool), minFiles === 0 ? null : fileCount, Number.isFinite(limit) ? `${fmtBytes(limit)}${many ? ' each' : ''}` : null].filter(Boolean).join(' · '))));
   }
 
   function fileCard(entry, i, count) {
@@ -489,7 +474,7 @@ export async function mountTool(root, env) {
         entry.password = inp.value;
         updateRun();
       });
-      lockEl = h('div', { class: 'card-lock' }, h('p', { class: 'card-lock-text' }, icon('lock', 14), h('span', {}, 'Locked — enter its password')), inp);
+      lockEl = h('div', { class: 'card-lock' }, h('p', { class: 'card-lock-text' }, icon('lock', 14), h('span', {}, 'Locked — enter password')), inp);
     }
     const helpEl = entry.error && entry.help?.length
       ? h('p', { class: 'card-help' }, 'Try ', ...entry.help.flatMap((t, k) => [k ? ', ' : '', h('a', { href: toolPath(t.slug || slugOf(t.id)), 'data-nav': '', onclick: (e) => { e.preventDefault(); env.navigate(toolPath(t.slug || slugOf(t.id)), { files: [entry.info] }); } }, t.title)]))
@@ -527,8 +512,7 @@ export async function mountTool(root, env) {
     const tools2 = maxFiles > 1 && count > 1 ? h('div', { class: 'cards-tools' },
       h('span', { class: 'kicker' }, 'Order'),
       h('button', { type: 'button', class: 'qchip', onclick: () => sortBy(1) }, 'A → Z'),
-      h('button', { type: 'button', class: 'qchip', onclick: () => sortBy(-1) }, 'Z → A'),
-      h('span', { class: 'hint' }, 'Drag the cards, or use the arrows.')) : null;
+      h('button', { type: 'button', class: 'qchip', onclick: () => sortBy(-1) }, 'Z → A')) : null;
     return [tools2, list];
   }
 
@@ -596,7 +580,7 @@ export async function mountTool(root, env) {
         },
       });
       gridSync = grid.sync;
-      parts.push(h('section', { class: 'pick-pages', 'aria-label': 'Pick pages' }, h('p', { class: 'kicker pick-kicker' }, 'Click pages to add them — Shift-click picks a range'), grid.el));
+      parts.push(h('section', { class: 'pick-pages', 'aria-label': 'Pick pages' }, h('p', { class: 'kicker pick-kicker' }, 'Click pages · Shift-click for a range'), grid.el));
     } else {
       grid = null;
       gridSync = null;
@@ -627,25 +611,17 @@ export async function mountTool(root, env) {
     env.remember?.({ files: readyFiles().map((f) => f.info), result: st.phase === 'done' ? st.result : null });
   }
 
-  /** The retention line (from /api/config) — nothing at all when the config is unknown. */
-  function privacyNote() {
-    const line = privacyLine(config, tool);
-    return line ? h('p', { class: 'dz-privacy' }, icon('shield', 15), line) : null;
-  }
-
   function noFilesNote() {
     return h('div', { class: 'nofiles' },
-      h('p', { class: 'dz-kicker' }, tool.category || 'heypdf'),
       h('h2', { class: 'dz-title' }, tool.title),
-      h('p', { class: 'dz-lede' }, tool.summary || 'Fill in the options, then run.'),
-      privacyNote());
+      h('p', { class: 'dz-lede' }, tool.summary || 'Fill in the options, then run.'));
   }
 
   // ── run state ─────────────────────────────────────────────────────────────
   function blocker() {
-    if (tool.available === false) return offLine(tool);
+    if (tool.available === false) return 'Not available';
     if (st.phase === 'running') return null;
-    if (st.uploading) return 'Waiting for the upload to finish…';
+    if (st.uploading) return 'Uploading…';
     const ready = readyFiles();
     if (takesFiles && ready.length < minFiles) {
       if (!ready.length) return minFiles > 1 ? `Add at least ${minFiles} ${inputNoun(tool)}` : `Add ${inputNoun(tool, false)} to start`;
@@ -669,9 +645,9 @@ export async function mountTool(root, env) {
     runBtn.classList.remove('is-cancel');
     const why = blocker();
     runBtn.disabled = Boolean(why);
-    const label = customRunLabel || (st.phase === 'done' ? `Run ${tool.title} again` : tool.title);
+    const label = customRunLabel || (st.phase === 'done' ? 'Run again' : tool.title);
     runBtn.replaceChildren(h('span', {}, label), glyph('arrowRight', 18));
-    runHint.textContent = why || (st.phase === 'done' ? 'Same files, current options.' : '');
+    runHint.textContent = why || '';
   }
 
   function clearRunError() {
@@ -806,7 +782,7 @@ export async function mountTool(root, env) {
     }
     if (status === 404) {
       const gone = readyFiles().filter((f) => f.id);
-      showRunError(e.detail && !/^404/.test(e.detail) ? e.detail : 'A file has expired on the server — upload it again.');
+      showRunError(e.detail && !/^404/.test(e.detail) ? e.detail : 'A file is gone — upload it again.');
       if (gone.length) render();
       return;
     }
@@ -840,7 +816,7 @@ export async function mountTool(root, env) {
         if (m) msg.textContent = m;
       },
       queued(pos) {
-        msg.textContent = pos ? `Waiting for a free slot — number ${pos} in line` : 'Waiting for a free slot…';
+        msg.textContent = pos ? `Waiting — number ${pos} in line` : 'Waiting for a free slot…';
       },
       text(all) {
         if (view?.streamText) return view.streamText(stream, all);
@@ -858,20 +834,20 @@ export async function mountTool(root, env) {
     const custom = view?.result ? view.result(r) : null;
     const single = files.length === 1 ? files[0] : null;
     const head = h('header', { class: 'pr-head' },
-      h('p', { class: 'kicker pr-kicker' }, `Done · ${elapsed(r.elapsed)}`),
       h('h2', { class: 'pr-title', id: 'pr-title', tabindex: '-1' }, custom?.title || (files.length === 0 ? 'Finished' : single ? 'Your file is ready' : `${files.length} files are ready`)),
       sizeDelta(r));
+    // the download button carries the size; the file's name is on its card below
     const dl = [];
-    if (r.zip) dl.push(h('a', { class: 'btn btn-primary btn-dl', href: pdfapi.downloadUrl(r.zip.id), download: r.zip.name || '' }, icon('download', 18), h('span', {}, `Download all (ZIP · ${fmtBytes(r.zip.size_bytes)})`)));
-    else if (single) dl.push(h('a', { class: 'btn btn-primary btn-dl', href: pdfapi.downloadUrl(single.id), download: single.name || '' }, icon('download', 18), h('span', {}, `Download ${single.name}`)));
+    if (r.zip) dl.push(h('a', { class: 'btn btn-primary btn-dl', href: pdfapi.downloadUrl(r.zip.id), download: r.zip.name || '' }, icon('download', 18), h('span', {}, 'Download all'), h('span', { class: 'btn-dl-size' }, `ZIP · ${fmtBytes(r.zip.size_bytes)}`)));
+    else if (single) dl.push(h('a', { class: 'btn btn-primary btn-dl', href: pdfapi.downloadUrl(single.id), download: single.name || '' }, icon('download', 18), h('span', {}, 'Download'), h('span', { class: 'btn-dl-size' }, fmtBytes(single.size_bytes))));
     const list = files.length ? h('ol', { class: 'pr-files' }, files.map((f, i) => h('li', { class: 'pr-file' },
       h('button', { type: 'button', class: 'pr-thumb', 'aria-label': `Preview ${f.name}`, onclick: () => (previewable(f) ? openPagesDialog(f) : null) }, fileThumb(f, 240)),
       h('div', { class: 'pr-cap' },
-        h('p', { class: 'pr-fig' }, `Fig. ${i + 1}`),
+        files.length > 1 ? h('p', { class: 'pr-fig' }, `Fig. ${i + 1}`) : null,
         h('p', { class: 'pr-name break' }, f.name),
         h('p', { class: 'pr-facts' }, fileFacts(f)),
         h('p', { class: 'pr-acts' },
-          h('a', { class: 'link-btn', href: pdfapi.downloadUrl(f.id), download: f.name || '' }, 'Download'),
+          single ? null : h('a', { class: 'link-btn', href: pdfapi.downloadUrl(f.id), download: f.name || '' }, 'Download'),
           f.kind === 'pdf' && previewable(f) ? h('button', { type: 'button', class: 'link-btn', onclick: () => openPagesDialog(f) }, 'Preview') : null))))) : null;
     const warns = (r.warnings || []).length ? h('ul', { class: 'pr-warn' }, r.warnings.map((w) => h('li', { class: 'warning' }, icon('alert', 14), h('span', {}, w)))) : null;
     const dataNote = !custom?.el ? genericData(r.data) : null;
@@ -907,7 +883,7 @@ export async function mountTool(root, env) {
   function continueBox(files, r = null) {
     if (!files.length) return null;
     // a PAdES signature covers the exact bytes: any later change breaks it
-    const signedNote = r?.data?.digital ? h('p', { class: 'note note-warn cw-note' }, icon('alert', 15), h('span', {}, 'Any change to this file breaks its digital signature — sign last.')) : null;
+    const signedNote = r?.data?.digital ? h('p', { class: 'note note-warn cw-note' }, icon('alert', 15), h('span', {}, 'Any change now breaks the digital signature.')) : null;
     const targets = continueTargets(tools, files, { from: tool });
     // image results can be edited further in heyp, a separate site: a plain link — the files don't move there
     const sibling = files.every((f) => kindOf(f) === 'image') ? safeUrl(config?.sibling_url, '') : '';
@@ -921,10 +897,10 @@ export async function mountTool(root, env) {
         e.preventDefault();
         env.navigate(toolPath(t.slug || slugOf(t.id)), { files });
       },
-    }, h('span', { class: 'cw-title' }, t.title), h('span', { class: 'cw-cat' }, t.category)));
+    }, h('span', { class: 'cw-title' }, t.title)));
     const more = rest.length ? h('details', { class: 'cw-more' }, h('summary', {}, `${rest.length} more`), h('ul', { class: 'cw-list' }, rest.map(link))) : null;
     const heyp = sibling ? h('li', {}, h('a', { class: 'cw-link cw-heyp', href: sibling, target: '_blank', rel: 'noopener' },
-      h('span', { class: 'cw-title' }, 'Open heyp'), h('span', { class: 'cw-cat' }, 'Photo toolbox · download the images first'))) : null;
+      h('span', { class: 'cw-title' }, 'Open heyp'), h('span', { class: 'cw-cat' }, 'Photo tools · download first'))) : null;
     return h('section', { class: 'continue', 'aria-labelledby': 'cw-title' },
       h('h3', { class: 'group-title', id: 'cw-title' }, 'Continue with'),
       signedNote,

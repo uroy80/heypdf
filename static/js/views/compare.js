@@ -53,8 +53,8 @@ export default {
       view = sideBySide(ctx, a, b, ia, ib);
       root.replaceChildren(
         h('div', { class: 'ws-file' },
-          h('span', { class: 'ws-name' }, 'A is the original, B the new version'),
-          h('button', { type: 'button', class: 'link-btn', onclick: () => { swapped = !swapped; builtKey = ''; build(); } }, glyph('swap', 14), 'Swap A and B'),
+          h('span', { class: 'ws-name' }, 'A: original · B: new'),
+          h('button', { type: 'button', class: 'link-btn', onclick: () => { swapped = !swapped; builtKey = ''; build(); } }, glyph('swap', 14), 'Swap'),
           h('button', { type: 'button', class: 'link-btn', onclick: () => ctx.removeFile(a.id) }, 'Remove A'),
           h('button', { type: 'button', class: 'link-btn', onclick: () => ctx.removeFile(b.id) }, 'Remove B')),
         view.el);
@@ -97,7 +97,7 @@ export default {
           c.b ? h('ins', {}, c.b) : null))))) : null;
         host.replaceChildren(...[
           h('p', { class: 'cmp-legend' }, h('span', { class: 'cmp-key cmp-removed' }), 'removed (in A) ', h('span', { class: 'cmp-key cmp-added' }), 'added (in B) ', h('span', { class: 'cmp-key cmp-changed' }), 'changed'),
-          r.data?.truncated ? h('p', { class: 'hint' }, 'Only the first changes are listed; the report has them all.') : null,
+          r.data?.truncated ? h('p', { class: 'hint' }, 'First changes only — the report lists all.') : null,
           v.el, list].filter(Boolean));
       });
       return { title, el: host };

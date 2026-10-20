@@ -116,7 +116,7 @@ test('A digitally signed result warns that later changes break the signature', a
   document.body.append(host);
   const result = { files: [{ ...PDF, id: ID2, name: 'contract_signed.pdf' }], zip: null, warnings: [], elapsed: 1, data: { digital: { self_signed: true } }, text: '' };
   const page = await mountTool(host, { tool: byId['pdf.sign'], tools, config: null, initialFiles: [PDF], initialResult: result, navigate() {}, remember() {} });
-  assert.match(host.querySelector('.continue').textContent, /Any change to this file breaks its digital signature — sign last\./);
+  assert.match(host.querySelector('.continue').textContent, /Any change now breaks the digital signature\./);
   page.destroy();
 });
 
@@ -154,8 +154,53 @@ test('On a touch screen the dropzone doesn’t ask to drag; Sign counts one PDF,
   assert.match(dz.querySelector('.dz-title').textContent, /^Add a PDF$/);
   assert.match(dz.querySelector('.dz-formats').textContent, /one file/);
   assert.doesNotMatch(dz.textContent, /up to 2 files/);
-  assert.doesNotMatch(host.querySelector('.tool-fine').textContent, /2 files/);
+  assert.doesNotMatch(host.textContent, /2 files/);
   page.destroy();
+});
+
+test('A tool page is a title and one short line; the upload area a headline, the button and one formats line', async () => {
+  const host = document.createElement('main');
+  document.body.append(host);
+  const config = { mode: 'hosted', ttl_minutes: 60, hard_ttl_minutes: 240, limits: { max_upload_mb: 90 } };
+  for (const t of tools.filter((x) => x.available !== false)) {
+    const page = await mountTool(host, { tool: t, tools, config, initialFiles: [], navigate() {}, remember() {} });
+    const head = host.querySelector('.tool-head');
+    assert.deepEqual(head.children.map((c) => c.className), t.summary ? ['tool-title', 'tool-desc'] : ['tool-title'], t.id);
+    if (t.summary) assert.ok(t.summary.split(/\s+/).length <= 6, `${t.id}: "${t.summary}"`);
+    const dz = host.querySelector('.dropzone');
+    if (dz) {
+      assert.equal(dz.querySelector('.dz-kicker'), null, `${t.id}: no kicker in the upload area`);
+      assert.equal(dz.querySelector('.dz-lede'), null, `${t.id}: no standfirst in the upload area`);
+      assert.equal(dz.querySelectorAll('.dz-formats').length, 1, `${t.id}: one formats line`);
+      assert.match(dz.querySelector('.dz-formats').textContent, /\d MB/, `${t.id}: the size limit stays visible`);
+    }
+    assert.doesNotMatch(host.textContent, /deleted|auto-?delete|last use|1 hour|4 hours/i, `${t.id}: no retention wording`);
+    page.destroy();
+  }
+});
+
+test('Option hints sit behind an info tip the control is described by — never a paragraph under it', async () => {
+  const host = document.createElement('main');
+  document.body.append(host);
+  for (const t of tools) {
+    const page = await mountTool(host, { tool: t, tools, config: null, initialFiles: [], navigate() {}, remember() {} });
+    assert.equal(host.querySelectorAll('.pf-row .hint').length, 0, `${t.id}: a visible hint under a control`);
+    for (const pop of host.querySelectorAll('.pf-row .tip-pop')) {
+      assert.equal(pop.getAttribute('role'), 'tooltip');
+      assert.ok(pop.textContent.split(/\s+/).length <= 16, `${t.id}: a long tip "${pop.textContent}"`);
+      const btn = pop.closest('.tip').querySelector('.tip-btn');
+      assert.match(btn.getAttribute('aria-label'), /^About /);
+      assert.equal(btn.getAttribute('aria-describedby'), pop.id);
+      const row = pop.closest('.pf-row');
+      const described = [row, ...row.querySelectorAll('[aria-describedby]')].filter((el) => el.getAttribute('aria-describedby')).filter((el) => el !== btn && el.getAttribute('aria-describedby').split(' ').includes(pop.id));
+      assert.ok(described.length, `${t.id}: no control points at its tip`);
+    }
+    page.destroy();
+  }
+  const pn = await mountTool(host, { tool: byId['pdf.page_numbers'], tools, config: null, initialFiles: [], navigate() {}, remember() {} });
+  const row = host.querySelector('.pf-row[data-key="format"]');
+  assert.match(row.querySelector('.tip-pop').textContent, /\{n\}/, 'the format tokens are explained in the tip');
+  pn.destroy();
 });
 
 test('Image results offer heyp as a plain link to its own site; PDFs and a server without heyp don’t', async () => {

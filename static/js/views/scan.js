@@ -66,13 +66,13 @@ export default {
     const shutter = h('button', { type: 'button', class: 'sc-shutter', 'aria-label': 'Take the picture (Space)', disabled: true, onclick: () => capture() }, h('span', {}));
     const camBox = h('div', { class: 'sc-cam', hidden: true }, video, liveQuad, h('div', { class: 'sc-cam-bar' },
       h('button', { type: 'button', class: 'btn btn-sm sc-cam-stop', onclick: () => stopCamera() }, 'Close camera'), shutter, h('span', { class: 'sc-count mono' })));
-    const startBtn = h('button', { type: 'button', class: 'btn btn-primary', disabled: !canCamera, onclick: () => startCamera() }, glyph('camera', 17), h('span', {}, 'Use this device’s camera'));
+    const startBtn = h('button', { type: 'button', class: 'btn btn-primary', disabled: !canCamera, onclick: () => startCamera() }, glyph('camera', 17), h('span', {}, 'Use camera'));
     const phoneBox = h('div', { class: 'sc-phone' });
     const phoneBtn = h('button', { type: 'button', class: 'btn', onclick: () => startSession() }, glyph('phone', 17), h('span', {}, 'Use your phone'));
     const grid = h('ol', { class: 'sc-grid', 'aria-label': 'Scanned pages, in order' });
     const intro = h('div', { class: 'sc-intro' },
       h('div', { class: 'btn-row' }, startBtn, phoneBtn, h('button', { type: 'button', class: 'btn btn-ghost', onclick: () => ctx.pick() }, icon('upload', 16), h('span', {}, 'Upload photos'))),
-      canCamera ? null : h('p', { class: 'hint' }, window.isSecureContext ? 'This browser has no camera access — use your phone or upload photos.' : 'The camera needs a secure (https) page — use your phone or upload photos.'));
+      canCamera ? null : h('p', { class: 'hint' }, window.isSecureContext ? 'No camera here — use your phone or upload photos.' : 'The camera needs https — use your phone or upload photos.'));
     const errors = h('ul', { class: 'sc-errors' });
     const root = h('div', { class: 'sc' }, intro, camStatus, camBox, phoneBox, errors, grid);
 
@@ -85,8 +85,8 @@ export default {
       } catch (e) {
         stream = null;
         camStatus.textContent = e?.name === 'NotAllowedError'
-          ? 'Camera access was blocked. Allow it in the address bar, or use your phone instead.'
-          : e?.name === 'NotFoundError' ? 'No camera found on this device — use your phone or upload photos.' : 'The camera could not be started.';
+          ? 'Camera blocked — allow it in the address bar, or use your phone.'
+          : e?.name === 'NotFoundError' ? 'No camera found — use your phone or upload photos.' : 'The camera could not be started.';
         return;
       }
       if (destroyed) {
@@ -96,7 +96,7 @@ export default {
       video.srcObject = stream;
       camBox.hidden = false;
       shutter.disabled = false;
-      camStatus.textContent = 'Hold the page flat in good light. The red outline shows the edges we found.';
+      camStatus.textContent = 'Hold the page flat in good light.';
       try {
         await video.play();
       } catch {
@@ -188,27 +188,18 @@ export default {
       const qr = typeof session.qr_svg === 'string' && /^\s*<svg[\s>]/.test(session.qr_svg)
         ? h('img', { class: 'sc-qr', alt: 'QR code — scan it with your phone’s camera', src: `data:image/svg+xml;charset=utf-8,${encodeURIComponent(session.qr_svg)}` })
         : null;
-      const left = h('span', { class: 'sc-expiry mono' });
-      const exp = expiresAt(session);
-      const tick = () => {
-        const ms = exp - Date.now();
-        if (!Number.isFinite(ms)) return;
-        left.textContent = ms > 0 ? `Expires in ${Math.floor(ms / 60000)}:${String(Math.floor((ms % 60000) / 1000)).padStart(2, '0')}` : 'Expired';
-      };
-      tick();
       const linkInput = h('input', { type: 'text', class: 'input input-mono sc-link', readonly: true, value: session.url, 'aria-label': 'Link for your phone', onfocus: (e) => e.target.select() });
       phoneBox.replaceChildren(h('div', { class: 'sc-phone-card' },
         qr,
         h('div', { class: 'sc-phone-text' },
           h('p', { class: 'kicker' }, 'Scan with your phone'),
-          h('p', {}, 'Point your phone’s camera at the code, open the link and take the pictures. They appear here as you go.'),
+          h('p', {}, 'Point your phone’s camera at the code.'),
           linkInput,
           session.reachable_from_phone === false ? h('p', { class: 'note note-warn sc-unreachable' }, icon('alert', 14), h('span', {}, ctx.config?.mode === 'hosted'
             ? 'Your phone can’t open this address. Upload the photos instead.'
-            : 'This address only works on this computer, so your phone can’t open it. Open heypdf through your computer’s network address (or set HEYP_PUBLIC_URL), or upload the photos instead.')) : null,
-          h('p', { class: 'sc-phone-meta' }, left, h('span', { class: 'sc-recv mono', 'aria-live': 'polite' }, '')),
+            : 'Your phone can’t open this address. Open heypdf by its network address (or set HEYP_PUBLIC_URL), or upload photos.')) : null,
+          h('p', { class: 'sc-phone-meta' }, h('span', { class: 'sc-recv mono', 'aria-live': 'polite' }, '')),
           h('div', { class: 'btn-row' }, h('button', { type: 'button', class: 'btn btn-sm', onclick: () => endSession() }, 'Done')))));
-      session.tick = setInterval(tick, 1000);
     }
 
     async function poll() {
@@ -221,7 +212,7 @@ export default {
         for (const p of fresh) session.seen.add(p.id);
         if (fresh.length) ctx.addInfos(fresh);
         const recv = phoneBox.querySelector('.sc-recv');
-        if (recv) recv.textContent = pages.length ? ` · ${pages.length} received` : '';
+        if (recv) recv.textContent = pages.length ? `${pages.length} received` : '';
         if (expiresAt(session) <= Date.now()) {
           expired();
           return;
@@ -238,7 +229,7 @@ export default {
     function expired() {
       stopPolling();
       session = null;
-      phoneBox.replaceChildren(h('p', { class: 'note' }, h('span', {}, 'The phone link has expired. '), h('button', { type: 'button', class: 'link-btn', onclick: () => startSession() }, 'Make a new one')));
+      phoneBox.replaceChildren(h('p', { class: 'note' }, h('span', {}, 'The phone code expired. '), h('button', { type: 'button', class: 'link-btn', onclick: () => startSession() }, 'Make a new one')));
     }
 
     /** Session expiry in ms: the server sends epoch seconds (ISO strings are accepted too). */
@@ -294,7 +285,7 @@ export default {
           h('button', { type: 'button', class: 'sc-thumb', 'aria-label': `Adjust the corners of page ${i + 1}`, onclick: () => editCorners(f, m) }, frame),
           h('div', { class: 'sc-cap' },
             h('span', { class: 'sc-no mono' }, String(i + 1)),
-            h('span', { class: 'sc-state' }, m.manual ? 'Corners set by you' : m.quad ? 'Edges found' : ctx.values.detect === false ? 'Whole photo' : 'Edges: on the server')),
+            h('span', { class: 'sc-state' }, m.manual ? 'Your corners' : m.quad ? 'Edges found' : ctx.values.detect === false ? 'Whole photo' : 'Auto edges')),
           h('div', { class: 'sc-tools' },
             h('button', { type: 'button', class: 'og-tool', 'aria-label': `Move page ${i + 1} earlier`, disabled: i === 0, onclick: () => ctx.moveFile(f.id, -1) }, glyph('left', 14)),
             h('button', { type: 'button', class: 'og-tool', 'aria-label': `Move page ${i + 1} later`, disabled: i === list.length - 1, onclick: () => ctx.moveFile(f.id, 1) }, glyph('right', 14)),
@@ -325,7 +316,7 @@ export default {
           hd.setAttribute('aria-valuetext', `${Math.round(quad[i][0] * 100)} %, ${Math.round(quad[i][1] * 100)} %`);
         });
         const ok = quadOk(orderQuad(quad), 0.02);
-        warn.textContent = ok ? '' : 'The corners cross or the area is tiny — move them to the corners of the page.';
+        warn.textContent = ok ? '' : 'Corners cross or the area is too small.';
         save.disabled = !ok;
       };
       handles.forEach((hd, i) => {
@@ -355,7 +346,7 @@ export default {
       });
       const save = h('button', { type: 'button', class: 'btn btn-primary' }, 'Use these corners');
       const dlg = h('dialog', { class: 'dialog ce-dialog', 'aria-label': 'Adjust the corners' },
-        h('div', { class: 'dialog-head' }, h('h2', {}, 'Drag the corners to the page’s corners'), h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Close', onclick: () => dlg.close() }, glyph('x', 16))),
+        h('div', { class: 'dialog-head' }, h('h2', {}, 'Drag to the page’s corners'), h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Close', onclick: () => dlg.close() }, glyph('x', 16))),
         h('div', { class: 'ce-body' }, stage),
         warn,
         h('div', { class: 'btn-row dialog-actions' },

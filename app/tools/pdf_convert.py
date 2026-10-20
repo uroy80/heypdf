@@ -12,7 +12,7 @@ from app.pdf.runner import job
 
 register(Tool(
     id="pdf.from_images", title="JPG to PDF", category="Convert to PDF",
-    summary="Put photos and images into a PDF — page size, orientation and margins as you like.",
+    summary="Turn images into a PDF.",
     inputs=("image",), options=O.FromImagesOptions, min_files=1, max_files=convert.MAX_IMAGES, timeout_s=300,
     limits={"max_total_mb": 1000},
     run=job(convert.from_images, kinds=("image",), mem_mb=2048, timeout_s=300, message="Building the PDF"),
@@ -20,7 +20,7 @@ register(Tool(
 
 register(Tool(
     id="pdf.to_images", title="PDF to JPG", category="Convert from PDF",
-    summary="Turn each page into a JPG or PNG, or pull out the images inside the PDF.",
+    summary="Pages to JPG or PNG.",
     inputs=("pdf",), options=O.ToImagesOptions, min_files=1, max_files=20, lane="heavy", timeout_s=600,
     limits={"max_pages": 5000, "memory_mb": 1024},
     run=job(convert.to_images, mem_mb=2048, timeout_s=600, message="Rendering pages"),
@@ -28,7 +28,7 @@ register(Tool(
 
 register(Tool(
     id="pdf.to_word", title="PDF to Word", category="Convert from PDF",
-    summary="An editable DOCX that keeps paragraphs, tables and images where it can.",
+    summary="Turn a PDF into Word.",
     inputs=("pdf",), options=O.ToWordOptions, lane="heavy", timeout_s=600,
     limits={"max_pages": convert.MAX_PAGES_WORD, "memory_mb": 1536},
     run=job(convert.to_word, mem_mb=2560, timeout_s=600, message="Converting to Word"),
@@ -36,14 +36,14 @@ register(Tool(
 
 register(Tool(
     id="pdf.to_excel", title="PDF to Excel", category="Convert from PDF",
-    summary="Find the tables in a PDF and put them into a spreadsheet.",
+    summary="PDF tables into a spreadsheet.",
     inputs=("pdf",), options=O.ToExcelOptions, timeout_s=300, limits={"max_pages": convert.MAX_PAGES_EXCEL},
     run=job(convert.to_excel, mem_mb=1536, timeout_s=300, message="Finding tables"),
     outputs="<name>.xlsx"))
 
 register(Tool(
     id="pdf.to_markdown", title="PDF to Markdown", category="Convert from PDF",
-    summary="Clean Markdown with headings, lists, tables and links — handy for notes and AI tools.",
+    summary="Turn a PDF into Markdown.",
     inputs=("pdf",), options=O.ToMarkdownOptions, timeout_s=300, limits={"max_pages": markdown.MAX_PAGES},
     run=job(markdown.to_markdown, mem_mb=1536, timeout_s=300, message="Converting to Markdown"),
     outputs="<name>.md"))

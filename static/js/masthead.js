@@ -1,6 +1,5 @@
-// The masthead ear, dateline and footer from /api/config. index.html ships no claim at all:
-// <body class="copy-pending"> and an empty, hidden pill. When the config answers, its facts go in; when it can't be
-// had, .copy-unknown keeps the page claim-free (never a fallback to wording that may be false on this deployment).
+// The masthead's app switch and the footer, from /api/config. The masthead states no policy at all (retention and
+// privacy live on /privacy); <body class="copy-pending"> becomes .copy-unknown when the config can't be had.
 
 import { $ } from './dom.js';
 import { pdfapi } from './pdfapi.js';
@@ -11,15 +10,6 @@ export function applyConfig(cfg, doc = document) {
   doc.body.classList.remove('copy-pending');
   doc.body.classList.toggle('copy-unknown', !c.known);
   doc.body.classList.toggle('is-hosted', cfg?.mode === 'hosted');
-  const pill = $('#mode-pill', doc);
-  if (pill) {
-    pill.textContent = c.pill || '';
-    if (c.pillTitle) pill.title = c.pillTitle;
-    else pill.removeAttribute('title');
-    pill.hidden = !c.pill;
-  }
-  const edition = $('#dateline-edition', doc);
-  if (edition) edition.textContent = c.dateline || '';
   const src = $('#source-link', doc);
   if (src) {
     src.href = c.source;

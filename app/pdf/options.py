@@ -77,25 +77,27 @@ class SplitOptions(Opts):
         "ranges", json_schema_extra=ui(widget="segmented", labels={
             "ranges": "Custom ranges", "fixed": "Every N pages", "all": "Every page", "size": "By size"}))
     ranges: PagesSpec = Field("1", description="e.g. 1-3, 4, 5-last — one file per range",
-                              json_schema_extra=ui(widget="pages", show_if={"mode": "ranges"}))
+                              json_schema_extra=ui(widget="pages", show_if={"mode": "ranges"},
+                                                help="One file per range, e.g. 1-3, 5-last"))
     merge: bool = Field(False, description="Merge all ranges into one PDF",
-                        json_schema_extra=ui(widget="toggle", show_if={"mode": "ranges"}))
+                        json_schema_extra=ui(widget="toggle", show_if={"mode": "ranges"}, label="Merge into one PDF"))
     every: int = Field(2, ge=1, le=10_000, description="Pages per file",
-                       json_schema_extra=ui(widget="number", show_if={"mode": "fixed"}))
+                       json_schema_extra=ui(widget="number", show_if={"mode": "fixed"}, label="Pages per file"))
     max_mb: float = Field(1.0, gt=0.01, le=2000, description="Largest size per file",
-                          json_schema_extra=ui(widget="number", unit="MB", step=0.1, show_if={"mode": "size"}))
+                          json_schema_extra=ui(widget="number", unit="MB", step=0.1, show_if={"mode": "size"},
+                                                         label="Max size per file"))
 
 
 class RemovePagesOptions(Opts):
     pages: RequiredPages = Field(..., description="Pages to remove, e.g. 2, 5-7",
-                                 json_schema_extra=ui(widget="pages"))
+                                 json_schema_extra=ui(widget="pages", label="Pages to remove"))
 
 
 class ExtractPagesOptions(Opts):
     pages: PagesSpec = Field("all", description="Pages to extract, e.g. 1, 3-5 (all = every page)",
-                             json_schema_extra=ui(widget="pages"))
+                             json_schema_extra=ui(widget="pages", label="Pages to extract"))
     merge: bool = Field(False, description="Put the extracted pages into one PDF",
-                        json_schema_extra=ui(widget="toggle"))
+                        json_schema_extra=ui(widget="toggle", label="Merge into one PDF"))
 
 
 class OrganizePage(Opts):
@@ -123,13 +125,14 @@ class OrganizeOptions(Opts):
 
 class PageLayoutOptions(Opts):
     page_size: Literal["fit", "a4", "letter"] = Field(
-        "a4", json_schema_extra=ui(widget="segmented", labels={"fit": "Fit (same as image)", "a4": "A4",
+        "a4", json_schema_extra=ui(widget="segmented", labels={"fit": "Fit image", "a4": "A4",
                                                                "letter": "US Letter"}))
     orientation: Literal["portrait", "landscape", "auto"] = Field(
         "portrait", json_schema_extra=ui(widget="segmented", show_if={"page_size": ["a4", "letter"]}))
     margin: Literal[0, 20, 40] = Field(0, json_schema_extra=ui(
         widget="segmented", unit="pt", labels={"0": "No margin", "20": "Small", "40": "Big"}))
-    merge: bool = Field(True, description="All images in one PDF", json_schema_extra=ui(widget="toggle"))
+    merge: bool = Field(True, description="All images in one PDF",
+                        json_schema_extra=ui(widget="toggle", label="Merge into one PDF"))
 
 
 Quad = Annotated[list[Point], Field(min_length=4, max_length=4)]
@@ -141,7 +144,7 @@ class ScanOptions(PageLayoutOptions):
         json_schema_extra=ui(widget="segmented", labels={"color": "Colour", "gray": "Greyscale",
                                                          "bw": "Black & white", "none": "Original"}))
     detect: bool = Field(True, description="Find the document edges automatically",
-                         json_schema_extra=ui(widget="toggle"))
+                         json_schema_extra=ui(widget="toggle", label="Find edges automatically"))
     corners: list[Quad | None] = Field(
         default_factory=list, max_length=200,
         description="Per image (in file order): 4 corner points as image fractions, or null",
@@ -157,7 +160,7 @@ class FromImagesOptions(PageLayoutOptions):
 
 class ToImagesOptions(Opts):
     mode: Literal["pages", "extract"] = Field(
-        "pages", json_schema_extra=ui(widget="segmented", labels={"pages": "Page to image",
+        "pages", json_schema_extra=ui(widget="segmented", labels={"pages": "Pages to images",
                                                                   "extract": "Extract images"}))
     format: Literal["jpg", "png"] = Field("jpg", json_schema_extra=ui(widget="segmented",
                                                                       show_if={"mode": "pages"}))
@@ -174,7 +177,8 @@ class ToWordOptions(Opts):
         "auto", description="Layout keeps positions, tables and images; Text rebuilds plain paragraphs "
                             "(best for scanned PDFs that were OCR'd)",
         json_schema_extra=ui(widget="segmented", labels={"auto": "Automatic", "layout": "Keep layout",
-                                                         "text": "Text only"}))
+                                                         "text": "Text only"}, label="Conversion",
+                             help="Text only suits scanned PDFs after OCR"))
     pages: PagesSpec = Field("all", json_schema_extra=ui(widget="pages"))
 
 
@@ -185,9 +189,10 @@ class ToExcelOptions(Opts):
             "one_sheet": "Everything on one sheet"}))
     strategy: Literal["auto", "lines", "text"] = Field(
         "auto", description="Lines finds ruled tables; Text finds tables aligned by whitespace",
-        json_schema_extra=ui(widget="segmented"))
+        json_schema_extra=ui(widget="segmented", label="Find tables by",
+                             help="Lines: ruled tables. Text: columns lined up by spaces."))
     numbers: bool = Field(True, description="Store numbers as numbers",
-                          json_schema_extra=ui(widget="toggle"))
+                          json_schema_extra=ui(widget="toggle", label="Store numbers as numbers"))
     pages: PagesSpec = Field("all", json_schema_extra=ui(widget="pages"))
 
 
@@ -195,22 +200,22 @@ class ToMarkdownOptions(Opts):
     pages: PagesSpec = Field("all", json_schema_extra=ui(widget="pages"))
     images: Literal["placeholder", "omit"] = Field(
         "placeholder", description="Mark where images were, or leave them out",
-        json_schema_extra=ui(widget="segmented"))
+        json_schema_extra=ui(widget="segmented", labels={"placeholder": "Mark their place", "omit": "Leave out"}))
     headers_footers: Literal["remove", "keep"] = Field(
         "remove", description="Running headers, footers and page numbers",
         json_schema_extra=ui(widget="segmented"))
     page_breaks: bool = Field(False, description="Mark page breaks with a rule",
-                              json_schema_extra=ui(widget="toggle"))
+                              json_schema_extra=ui(widget="toggle", label="Mark page breaks"))
 
 
 # ====================================================================== Edit
 class RotateOptions(Opts):
     angle: Literal[90, 180, 270] = Field(90, description="Clockwise", json_schema_extra=ui(
-        widget="segmented", labels={"90": "Right", "180": "Upside down", "270": "Left"}))
+        widget="segmented", labels={"90": "Right", "180": "Upside down", "270": "Left"}, label="Turn"))
     pages: PagesSpec = Field("all", json_schema_extra=ui(widget="pages"))
     only: Literal["all", "portrait", "landscape"] = Field(
         "all", description="Rotate only portrait or only landscape pages",
-        json_schema_extra=ui(widget="segmented"))
+        json_schema_extra=ui(widget="segmented", label="Only rotate"))
 
 
 _TOKENS = re.compile(r"\{(n|total|roman|ROMAN|page|alpha)\}")
@@ -221,13 +226,14 @@ class PageNumbersOptions(Opts):
     format: Annotated[str, StringConstraints(min_length=1, max_length=120)] = Field(
         "{n}", description="Tokens: {n} number, {total} last number, {roman}/{ROMAN} numerals",
         json_schema_extra=ui(widget="combo", choices=["{n}", "Page {n}", "{n} of {total}",
-                                                      "Page {n} of {total}", "{roman}"]))
+                                                      "Page {n} of {total}", "{roman}"],
+                             help="{n} number · {total} page count · {roman} numerals"))
     start: int = Field(1, ge=0, le=1_000_000, description="First number",
-                       json_schema_extra=ui(widget="number"))
+                       json_schema_extra=ui(widget="number", label="First number"))
     pages: PagesSpec = Field("all", description="Pages that get a number",
                              json_schema_extra=ui(widget="pages"))
     facing: bool = Field(False, description="Facing pages: mirror left/right positions",
-                         json_schema_extra=ui(widget="toggle"))
+                         json_schema_extra=ui(widget="toggle", label="Mirror on facing pages"))
     first_cover: bool = Field(False, description="First page is a cover",
                               json_schema_extra=ui(widget="toggle", show_if={"facing": True}))
     margin: Literal["small", "medium", "big"] = Field(
@@ -258,19 +264,20 @@ class WatermarkOptions(Opts):
     color: Hex = Field("#888888", json_schema_extra=ui(widget="color", show_if={"kind": "text"}))
     image_id: FileId | None = Field(None, description="An image uploaded with this job",
                                     json_schema_extra=ui(widget="file", accept="image",
-                                                         show_if={"kind": "image"}))
+                                                         show_if={"kind": "image"}, label="Image"))
     image_data: ImageData | None = Field(None, json_schema_extra=ui(widget="hidden"))
     image_scale: float = Field(0.4, gt=0.01, le=1.0, description="Image width as a share of the page width",
                                json_schema_extra=ui(widget="slider", step=0.01, show_if={"kind": "image"}))
     opacity: float = Field(1.0, ge=0.0, le=1.0, json_schema_extra=ui(
         widget="segmented", choices=[1.0, 0.75, 0.5, 0.25],
-        labels={"1.0": "No transparency", "0.75": "25%", "0.5": "50%", "0.25": "75%"}))
+        labels={"1.0": "No transparency", "0.75": "25%", "0.5": "50%", "0.25": "75%"}, label="Transparency"))
     rotation: int = Field(0, ge=0, le=359, description="Counter-clockwise, degrees",
                           json_schema_extra=ui(widget="select", choices=[0, 45, 90, 180, 270], unit="°"))
     position: Pos9 = Field("middle-center", json_schema_extra=ui(widget="position9"))
-    mosaic: bool = Field(False, description="Tile across the page", json_schema_extra=ui(widget="toggle"))
+    mosaic: bool = Field(False, description="Tile across the page",
+                        json_schema_extra=ui(widget="toggle", label="Tile across the page"))
     layer: Literal["over", "under"] = Field("over", json_schema_extra=ui(
-        widget="segmented", labels={"over": "Over the content", "under": "Below the content"}))
+        widget="segmented", labels={"over": "Over content", "under": "Under content"}))
     pages: PagesSpec = Field("all", json_schema_extra=ui(widget="pages"))
     margin: float = Field(36, ge=0, le=500, json_schema_extra=ui(widget="number", unit="pt"))
 
@@ -292,7 +299,7 @@ class CropOptions(Opts):
                                                                 show_if={"mode": "auto"}))
     remove_outside: bool = Field(
         False, description="Also delete the content outside the box (a crop alone only hides it)",
-        json_schema_extra=ui(widget="toggle"))
+        json_schema_extra=ui(widget="toggle", label="Delete what's outside", help="A crop alone only hides it"))
 
     @model_validator(mode="after")
     def _need_box(self) -> CropOptions:
@@ -401,9 +408,10 @@ class FormsOptions(Opts):
                                                 json_schema_extra=ui(widget="canvas"))
     create: list[NewField] = Field(default_factory=list, max_length=1000, json_schema_extra=ui(widget="canvas"))
     detect: bool = Field(False, description="Create fields automatically where the page has blanks, lines and boxes",
-                         json_schema_extra=ui(widget="toggle"))
+                        json_schema_extra=ui(widget="toggle", label="Detect fields",
+                                             help="Turns blanks, lines and boxes into fields"))
     flatten: bool = Field(False, description="Make the filled form permanent (no longer editable)",
-                          json_schema_extra=ui(widget="toggle"))
+                          json_schema_extra=ui(widget="toggle", help="Makes the form no longer editable"))
 
 
 # ====================================================================== Security
@@ -412,14 +420,16 @@ Password = Annotated[str, StringConstraints(max_length=256)]
 
 class UnlockOptions(Opts):
     password: Password | None = Field(None, description="Only needed if the file asks for one to open",
-                                      json_schema_extra=ui(widget="password"))
+                                      json_schema_extra=ui(widget="password",
+                                                           help="Only if the file needs one to open"))
 
 
 class ProtectOptions(Opts):
     password: Password = Field("", description="Needed to open the file",
                                json_schema_extra=ui(widget="password", confirm=True))
     owner_password: Password = Field("", description="Needed to change permissions (random if empty)",
-                                     json_schema_extra=ui(widget="password", group="advanced"))
+                                     json_schema_extra=ui(widget="password", group="advanced",
+                                                          help="Needed to change permissions. Random if empty."))
     allow_print: bool = Field(True, json_schema_extra=ui(widget="toggle", group="advanced"))
     allow_modify: bool = Field(True, json_schema_extra=ui(widget="toggle", group="advanced"))
     allow_copy: bool = Field(True, json_schema_extra=ui(widget="toggle", group="advanced"))
@@ -504,11 +514,12 @@ RedactPreset = Literal["email", "phone", "card", "iban", "ssn", "ipv4", "url", "
 
 class SearchOptions(Opts):
     terms: list[Annotated[str, StringConstraints(min_length=1, max_length=200)]] = Field(
-        default_factory=list, max_length=200, json_schema_extra=ui(widget="tags"))
+        default_factory=list, max_length=200, json_schema_extra=ui(widget="tags", label="Words to redact"))
     presets: list[RedactPreset] = Field(default_factory=list, max_length=10, json_schema_extra=ui(
         widget="checks", labels={"email": "Emails", "phone": "Phone numbers", "card": "Card numbers",
                                  "iban": "IBANs", "ssn": "US SSNs", "ipv4": "IP addresses", "url": "Links",
-                                 "date": "Dates", "aadhaar": "Aadhaar numbers", "pan": "PAN (India)"}))
+                                 "date": "Dates", "aadhaar": "Aadhaar numbers", "pan": "PAN (India)"},
+        label="Also find"))
     regex: list[Annotated[str, StringConstraints(min_length=1, max_length=200)]] = Field(
         default_factory=list, max_length=20, json_schema_extra=ui(widget="tags", group="advanced"))
     case_sensitive: bool = Field(False, json_schema_extra=ui(widget="toggle", group="advanced"))
@@ -530,22 +541,29 @@ class RedactOptions(SearchOptions):
     areas: list[PageBox] = Field(default_factory=list, max_length=10_000, json_schema_extra=ui(widget="canvas"))
     full_pages: PagesSpec = Field("", description="Black out these pages completely",
                                   json_schema_extra=ui(widget="pages"))
-    fill: Hex = Field("#000000", json_schema_extra=ui(widget="color"))
+    fill: Hex = Field("#000000", json_schema_extra=ui(widget="color", label="Box colour"))
     label: Annotated[str, StringConstraints(max_length=60)] = Field(
-        "", description="Text shown on each box, e.g. REDACTED", json_schema_extra=ui(widget="text"))
+        "", description="Text shown on each box, e.g. REDACTED",
+        json_schema_extra=ui(widget="text", label="Box label", placeholder="e.g. REDACTED"))
     images: Literal["pixels", "remove"] = Field(
         "pixels", description="Blank the covered pixels, or remove touched images entirely",
-        json_schema_extra=ui(widget="segmented", group="advanced"))
+        json_schema_extra=ui(widget="segmented", group="advanced",
+                             labels={"pixels": "Blank covered part", "remove": "Remove whole image"}))
     graphics: Literal["covered", "touched"] = Field(
         "covered", description="Vector graphics under a drawn box: remove only those it fully covers, or every "
                                "one it touches — which also removes page backgrounds, table fills, banners and "
                                "borders that reach into the box (text on them may become invisible)",
         json_schema_extra=ui(widget="segmented", group="advanced",
-                             labels={"covered": "Fully covered", "touched": "Everything touched"}))
+                             labels={"covered": "Fully covered", "touched": "Everything touched"},
+                             label="Vector graphics",
+                             help="Everything touched also removes backgrounds, fills and borders "
+                                  "that reach into the box"))
     sanitize: bool = Field(True, description="Also remove metadata, attachments, scripts and thumbnails",
-                           json_schema_extra=ui(widget="toggle"))
+                           json_schema_extra=ui(widget="toggle", label="Remove metadata and attachments",
+                                                help="Also scripts and thumbnails"))
     remove_hidden_text: bool = Field(False, description="Remove invisible text (e.g. an OCR layer) everywhere",
-                                     json_schema_extra=ui(widget="toggle", group="advanced"))
+                                     json_schema_extra=ui(widget="toggle", group="advanced",
+                                                                    help="Invisible text, e.g. an OCR layer"))
 
     @model_validator(mode="after")
     def _need(self) -> RedactOptions:
@@ -558,10 +576,11 @@ class CompareOptions(Opts):
     mode: Literal["text", "overlay"] = Field(
         "text", json_schema_extra=ui(widget="segmented", labels={"text": "Text changes", "overlay": "Visual overlay"}))
     page_a: int | None = Field(None, ge=1, le=100_000, description="Overlay: page of the first file (all if empty)",
-                               json_schema_extra=ui(widget="number", show_if={"mode": "overlay"}))
+                               json_schema_extra=ui(widget="number", show_if={"mode": "overlay"},
+                                                    help="All pages if empty"))
     page_b: int | None = Field(None, ge=1, le=100_000, json_schema_extra=ui(widget="number", show_if={"mode": "overlay"}))
     ignore_case: bool = Field(False, json_schema_extra=ui(widget="toggle", show_if={"mode": "text"}))
     sensitivity: int = Field(40, ge=5, le=200, description="Overlay: pixel difference treated as a change",
                              json_schema_extra=ui(widget="slider", show_if={"mode": "overlay"}, group="advanced"))
     report: bool = Field(True, description="Produce a downloadable PDF report",
-                         json_schema_extra=ui(widget="toggle"))
+                         json_schema_extra=ui(widget="toggle", label="PDF report"))

@@ -55,9 +55,9 @@ class CompressOptions(_Options):
     level: Literal["extreme", "recommended", "less"] = Field(
         "recommended", title="Compression",
         json_schema_extra={"ui": {"widget": "radio", "labels": {
-            "extreme": "Extreme — smallest file, lower image quality (72 dpi)",
-            "recommended": "Recommended — good quality, good compression (150 dpi)",
-            "less": "Less — high quality, less compression (220 dpi)"}}})
+            "extreme": "Smallest file",
+            "recommended": "Recommended",
+            "less": "High quality"}}})
 
 
 class RepairOptions(_Options):
@@ -66,17 +66,17 @@ class RepairOptions(_Options):
 
 class OcrOptions(_Options):
     languages: list[OcrLanguage] = Field(  # type: ignore[valid-type]
-        default=["eng"], min_length=1, max_length=3, title="Document languages",  # a plain default shows in the schema
+        default=["eng"], min_length=1, max_length=3, title="Languages",  # a plain default shows in the schema
         description="Up to three languages that appear in the document",
-        json_schema_extra={"ui": {"widget": "multiselect", "labels": OCR_LANGUAGES, "max_items": 3}})
+        json_schema_extra={"ui": {"widget": "multiselect", "labels": OCR_LANGUAGES, "max_items": 3,
+                                  "help": "Up to three"}})
     mode: Literal["skip", "redo", "force"] = Field(
-        "skip", title="Pages that already have text",
+        "skip", title="Pages with text",
         json_schema_extra={"ui": {"widget": "select", "labels": {
-            "skip": "Leave them as they are", "redo": "Replace an earlier OCR layer",
-            "force": "Rasterise and OCR every page"}}})
-    deskew: bool = Field(True, title="Straighten tilted scans")
-    rotate_pages: bool = Field(True, title="Fix upside-down and sideways pages")
-    pdfa: bool = Field(False, title="Save as PDF/A-2b (archival)")
+            "skip": "Leave as they are", "redo": "Redo OCR", "force": "OCR every page"}}})
+    deskew: bool = Field(True, title="Straighten scans")
+    rotate_pages: bool = Field(True, title="Fix page rotation")
+    pdfa: bool = Field(False, title="Save as PDF/A")
 
     @field_validator("languages")
     @classmethod
@@ -92,8 +92,8 @@ class PdfaOptions(_Options):
 
 
 class FromOfficeOptions(_Options):
-    pdfa: bool = Field(False, title="Save as PDF/A-2b (archival)")
-    one_page_per_sheet: bool = Field(False, title="Spreadsheets: each sheet on one page",
+    pdfa: bool = Field(False, title="Save as PDF/A")
+    one_page_per_sheet: bool = Field(False, title="One page per sheet",
                                      json_schema_extra={"ui": {"show_if": {"input_formats": ["xls", "xlsx", "ods",
                                                                                               "csv"]}}})
 
@@ -242,7 +242,7 @@ register_engine_check("docs", docs.health)
 
 COMPRESS = register(Tool(
     id="pdf.compress", title="Compress PDF",
-    summary="Make a PDF smaller while keeping it readable — choose how hard to squeeze the images.",
+    summary="Make a PDF smaller.",
     category="Optimize", inputs=("pdf",), options=CompressOptions, run=run_compress, max_files=5,
     engine="docs", lane="docs", timeout_s=1500,
     limits={"max_mb": MAX_MB, "max_pages": MAX_PAGES, "max_files": 5},
@@ -250,7 +250,7 @@ COMPRESS = register(Tool(
 ))
 REPAIR = register(Tool(
     id="pdf.repair", title="Repair PDF",
-    summary="Rebuild a damaged PDF that won't open, and recover as much of it as possible.",
+    summary="Fix a damaged PDF.",
     category="Optimize", inputs=("pdf",), options=RepairOptions, run=run_repair, max_files=5,
     engine="docs", lane="docs", timeout_s=1500,
     limits={"max_mb": MAX_MB, "max_files": 5},
@@ -258,7 +258,7 @@ REPAIR = register(Tool(
 ))
 OCR = register(Tool(
     id="pdf.ocr", title="OCR PDF",
-    summary="Turn a scanned PDF into one you can search, select and copy text from.",
+    summary="Make scanned PDFs searchable.",
     category="Optimize", inputs=("pdf",), options=OcrOptions, run=run_ocr, max_files=1,
     engine="docs", lane="docs", timeout_s=1000,
     limits={"max_mb": MAX_MB, "max_pages": OCR_MAX_PAGES},
@@ -266,7 +266,7 @@ OCR = register(Tool(
 ))
 TO_PDFA = register(Tool(
     id="pdf.to_pdfa", title="PDF to PDF/A",
-    summary="Convert a PDF to PDF/A for long-term archiving (levels 1b, 2b, 3b).",
+    summary="Convert to PDF/A for archiving.",
     category="Convert from PDF", inputs=("pdf",), options=PdfaOptions, run=run_to_pdfa, max_files=5,
     engine="docs", lane="docs", timeout_s=1500,
     limits={"max_mb": MAX_MB, "max_pages": MAX_PAGES, "max_files": 5},
@@ -274,7 +274,7 @@ TO_PDFA = register(Tool(
 ))
 FROM_OFFICE = register(Tool(
     id="pdf.from_office", title="Office to PDF",
-    summary="Convert Word, PowerPoint and Excel files (or their OpenDocument cousins) to PDF.",
+    summary="Word, Excel or PowerPoint to PDF.",
     category="Convert to PDF", inputs=("office",), options=FromOfficeOptions, run=run_from_office, max_files=10,
     engine="docs", lane="docs", timeout_s=1500,
     limits={"max_mb": 100, "max_files": 10},
@@ -282,7 +282,7 @@ FROM_OFFICE = register(Tool(
 ))
 TO_PPTX = register(Tool(
     id="pdf.to_pptx", title="PDF to PowerPoint",
-    summary="Turn PDF pages into editable PowerPoint slides.",
+    summary="PDF pages to PowerPoint slides.",
     category="Convert from PDF", inputs=("pdf",), options=ToPptxOptions, run=run_to_pptx, max_files=3,
     engine="docs", lane="docs", timeout_s=900,
     limits={"max_mb": MAX_MB, "max_pages": PPTX_MAX_PAGES, "max_files": 3},

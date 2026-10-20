@@ -197,7 +197,8 @@ export function describeSchema(schema) {
     const d = {
       key,
       label: fieldLabel(key, ui.label, raw.title ?? node.title),
-      help: ui.help || node.description || '',
+      // only an explicit ui.help is shown (behind an info tip); a field's description documents the API
+      help: typeof ui.help === 'string' ? ui.help : '',
       default: 'default' in raw ? raw.default : node.default,
       nullable,
       required: required.has(key) && !('default' in raw) && !('default' in node),
@@ -214,8 +215,9 @@ export function describeSchema(schema) {
       maxItems: node.maxItems ?? null,
       placeholder: ui.placeholder || (node.examples?.[0] != null ? String(node.examples[0]) : ''),
       showIf: ui.show_if ?? ui.showIf ?? null,
-      group: ui.group || null,
-      advanced: Boolean(ui.advanced),
+      // group "advanced" folds into the collapsed "More options" instead of a heading of its own
+      group: ui.group && ui.group !== 'advanced' ? ui.group : null,
+      advanced: Boolean(ui.advanced) || ui.group === 'advanced',
       accept: ui.accept || null,
       confirm: Boolean(ui.confirm),
       order: Number.isFinite(ui.order) ? ui.order : 1000 + idx,

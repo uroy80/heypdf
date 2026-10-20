@@ -24,10 +24,6 @@ function store() {
 }
 
 function decorate() {
-  const today = new Date();
-  const date = $('#dateline-date');
-  date.textContent = new Intl.DateTimeFormat(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(today);
-  date.dateTime = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
   initTheme($('#theme-btn'));
 }
 
@@ -46,7 +42,7 @@ async function filesFromIds(ids) {
       if (e.status !== 404) toast(e.detail || 'A file could not be loaded', 'error');
     }
   }
-  if (ids.length && !out.length) toast('Those files have expired — upload them again', 'warn');
+  if (ids.length && !out.length) toast('Those files are gone — upload them again', 'warn');
   return out;
 }
 
@@ -77,10 +73,9 @@ async function render(route, { files = [], result = null } = {}) {
   if (!tool) {
     setTitle('Not found');
     main.replaceChildren(h('section', { class: 'lost' },
-      h('p', { class: 'kicker' }, 'Corrections & clarifications'),
-      h('h1', { class: 'lost-title', tabindex: '-1' }, 'There’s no such page in this edition.'),
-      h('p', { class: 'lost-lede' }, 'The tool may have moved, or isn’t available on this server.'),
-      h('a', { class: 'btn btn-primary', href: '/', 'data-nav': '' }, 'See every tool')));
+      h('p', { class: 'kicker' }, '404'),
+      h('h1', { class: 'lost-title', tabindex: '-1' }, 'Page not found.'),
+      h('a', { class: 'btn btn-primary', href: '/', 'data-nav': '' }, 'All tools')));
     main.querySelector('.lost-title')?.focus();
     return;
   }
@@ -165,8 +160,7 @@ function onLinkClick(e) {
 function showBootError(detail) {
   setTitle('Can’t connect');
   main.replaceChildren(h('section', { class: 'lost' },
-    h('p', { class: 'kicker' }, 'Service notice'),
-    h('h1', { class: 'lost-title' }, 'heypdf can’t reach its server right now.'),
+    h('h1', { class: 'lost-title' }, 'Can’t reach heypdf.'),
     h('p', { class: 'lost-lede' }, detail && detail !== OFFLINE ? detail : 'Check your connection and try again.'),
     h('button', { type: 'button', class: 'btn btn-primary', onclick: () => location.reload() }, 'Try again')));
 }

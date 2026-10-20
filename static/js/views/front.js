@@ -5,11 +5,12 @@ import { h, fmtBytes } from '../dom.js';
 import { icon } from '../icons.js';
 import { toast } from '../ui.js';
 import { glyph } from '../glyphs.js';
-import { groupTools, CATEGORY_DECKS, searchTools, describeInputs, fitsFiles } from '../catalog.js';
+import { groupTools, searchTools, describeInputs, fitsFiles } from '../catalog.js';
 import { slugOf, toolPath } from '../router.js';
 import { pdfapi } from '../pdfapi.js';
 import { session } from '../session.js';
-import { privacyLine, offLine } from '../copy.js';
+import { offShort } from '../copy.js';
+import { infoTip } from '../tip.js';
 import { uploadBatches } from '../uploads.js';
 
 const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
@@ -35,9 +36,8 @@ export function mountFront(root, env) {
   const count = h('span', { class: 'front-count' });
 
   const head = h('header', { class: 'front-head' },
-    h('p', { class: 'kicker front-kicker' }, h('span', {}, 'The PDF edition'), count),
+    h('p', { class: 'kicker front-kicker' }, count),
     h('h1', { class: 'front-title', tabindex: '-1' }, 'Every PDF job, ', h('em', {}, 'on one page.')),
-    h('p', { class: 'front-lede' }, 'Merge, split, compress, convert, sign, redact and compare PDFs.', privacyLine(config) ? [' ', h('span', { class: 'front-privacy' }, privacyLine(config), '.')] : null),
     h('div', { class: 'front-actions' },
       h('label', { class: 'front-find' }, icon('search', 16), search),
       h('button', { type: 'button', class: 'btn btn-primary front-pick', onclick: () => fileInput.click() }, glyph('upload', 16), h('span', {}, 'Start with a file'))));
@@ -53,7 +53,6 @@ export function mountFront(root, env) {
       shown += items.length;
       return h('section', { class: 'sec', 'aria-labelledby': `sec-${gi}` },
         h('h2', { class: 'sec-head', id: `sec-${gi}` }, h('span', { class: 'sec-no' }, `§${ROMAN[gi] || gi + 1}`), h('span', { class: 'sec-name' }, g.category)),
-        CATEGORY_DECKS[g.category] ? h('p', { class: 'sec-deck' }, CATEGORY_DECKS[g.category]) : null,
         h('ol', { class: 'sec-list' }, items.map((t) => toolItem(t))));
     }).filter(Boolean);
     if (!shown) {
@@ -68,10 +67,13 @@ export function mountFront(root, env) {
     const off = t.available === false;
     const fits = off ? null : fitsFiles(t, st.files); // an unavailable tool is never marked
     const cls = `sec-item${off ? ' is-off' : ''}${fits === true ? ' is-fit' : fits === false ? ' is-unfit' : ''}`;
+    const short = off ? offShort(t) : null;
+    // a self-hosted server's own reason (configuration detail) sits behind a tip, not on the card
+    const why = short?.why ? infoTip(short.why, { label: `Why ${t.title} is unavailable` }) : null;
     const body = [
       h('span', { class: 'sec-title' }, t.title, fits ? h('span', { class: 'fit-mark', 'aria-label': ' — takes your file' }, '●') : null),
       t.summary ? h('span', { class: 'sec-sum' }, t.summary) : null,
-      off ? h('span', { class: 'sec-off' }, offLine(t)) : null,
+      off ? h('span', { class: 'sec-off' }, short.text, why?.el) : null,
     ];
     if (off) return h('li', { class: cls }, h('div', { class: 'sec-link', 'aria-disabled': 'true' }, body));
     return h('li', { class: cls }, h('a', {
@@ -135,7 +137,7 @@ export function mountFront(root, env) {
         h('span', { class: 'kicker' }, 'Your file'),
         h('strong', { class: 'break' }, names),
         h('span', { class: 'muted' }, st.files.length === 1 ? [st.files[0].pages ? `${st.files[0].pages} ${st.files[0].pages === 1 ? 'page' : 'pages'}` : describeInputs({ inputs: [st.files[0].kind || 'file'] }), fmtBytes(st.files[0].size_bytes)].filter(Boolean).join(' · ') : ''),
-        h('span', { class: 'tray-fit' }, fits ? `${fits} ${fits === 1 ? 'tool takes' : 'tools take'} it — marked ●` : 'No tool takes this file'),
+        h('span', { class: 'tray-fit' }, fits ? `${fits} ${fits === 1 ? 'tool takes' : 'tools take'} it ●` : 'No tool takes this file'),
         h('button', {
           type: 'button', class: 'link-btn', onclick: () => {
             for (const f of st.files) {

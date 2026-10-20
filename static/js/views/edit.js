@@ -11,6 +11,7 @@ import { boxAt, boxForAspect, textBoxHeight, editItems } from '../items.js';
 import { pdfapi } from '../pdfapi.js';
 import { glyph } from '../glyphs.js';
 import { imageFileToDataUrl } from '../imagedata.js';
+import { infoTip } from '../tip.js';
 
 const TOOLS = [
   { id: 'select', label: 'Select', glyph: 'cursor', key: 'v' },
@@ -25,18 +26,21 @@ const TOOLS = [
   { id: 'whiteout', label: 'White-out', glyph: 'eraser', key: 'w' },
 ];
 
+/** One short line per tool under the palette; the keyboard details sit behind the palette's info tip. */
 const HINTS = {
-  select: 'Click an item to select it; drag to move, pull a handle to resize. Delete removes it, ⌘/Ctrl+Z undoes.',
-  text: 'Click on a page to add a text box (or drag to size it), then type. Double-click a box to edit it.',
-  image: 'Choose a picture; it lands on the page you are looking at.',
-  rect: 'Drag on a page to draw a box.',
-  ellipse: 'Drag on a page to draw an ellipse.',
-  line: 'Drag on a page to draw a line.',
-  arrow: 'Drag on a page to draw an arrow.',
-  freehand: 'Draw on the page with the mouse, a pen or a finger.',
-  highlight: 'Drag over the text to highlight it.',
-  whiteout: 'Drag over something to cover it with white — it hides it, it doesn’t delete it. Use Redact PDF for that.',
+  select: 'Click an item to select it.',
+  text: 'Click a page, then type.',
+  image: 'Choose a picture.',
+  rect: 'Drag to draw a box.',
+  ellipse: 'Drag to draw an ellipse.',
+  line: 'Drag to draw a line.',
+  arrow: 'Drag to draw an arrow.',
+  freehand: 'Draw on the page.',
+  highlight: 'Drag over text.',
+  // honest about what white-out does: it covers, it doesn't remove
+  whiteout: 'Covers only — Redact PDF removes.',
 };
+const KEYS_HELP = 'Drag to move, pull a handle to resize. Double-click text to edit. Delete removes, ⌘/Ctrl+Z undoes. Letter keys pick tools (V, T, I, R, O, L, A, D, H, W).';
 
 const SWATCHES = ['#000000', '#b4141b', '#1f5fbf', '#2d6a3a', '#ffffff'];
 
@@ -50,13 +54,14 @@ export default {
 
     // ── side panel ──────────────────────────────────────────────────────
     const pal = palette(TOOLS, (id, e) => pickTool(id, e), { label: 'Edit tools' });
+    const keysTip = infoTip(KEYS_HELP, { label: 'Editing controls' });
     const hint = h('p', { class: 'hint pal-hint' });
     const propsHost = h('div', { class: 'props' });
     const undoBtn = h('button', { type: 'button', class: 'btn btn-sm', onclick: () => ed?.undo(), disabled: true }, 'Undo');
     const redoBtn = h('button', { type: 'button', class: 'btn btn-sm', onclick: () => ed?.redo(), disabled: true }, 'Redo');
     const tally = h('p', { class: 'tally', 'aria-live': 'polite' });
     const panel = h('section', { class: 'vpanel', 'aria-label': 'Edit tools' },
-      h('h2', { class: 'group-title' }, 'Tools'), pal.el, hint,
+      h('div', { class: 'label-line' }, h('h2', { class: 'group-title' }, 'Tools'), keysTip.el), pal.el, hint,
       propsHost,
       h('div', { class: 'btn-row vp-undo' }, undoBtn, redoBtn, tally));
 
@@ -97,7 +102,7 @@ export default {
       const tool = ed?.tool() || 'select';
       const kind = item?.type || (tool === 'select' ? null : tool);
       if (!kind) {
-        propsHost.replaceChildren(count ? h('p', { class: 'hint' }, 'Select an item to change it.') : '');
+        propsHost.replaceChildren();
         return;
       }
       const set = (patch, history = true) => {

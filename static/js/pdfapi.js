@@ -19,7 +19,7 @@ async function errorFrom(res) {
     /* not JSON */
   }
   const retry = res.status === 503 || res.status === 429 ? retryAfterSeconds(res.headers.get('Retry-After')) : null;
-  const fallback = res.status === 404 ? 'Not found — the file may have expired' : `${res.status} ${res.statusText || 'error'}`;
+  const fallback = res.status === 404 ? 'Not found — upload the file again' : `${res.status} ${res.statusText || 'error'}`;
   return new ApiError(res.status, formatDetail(body?.detail, fallback), body, retry);
 }
 
@@ -82,7 +82,7 @@ export const pdfapi = {
         }
         if (xhr.status >= 200 && xhr.status < 300) resolve(body || {});
         else {
-          const fallback = xhr.status === 404 ? 'This scan link has expired' : xhr.status === 413 ? EDGE_TOO_LARGE : `Upload failed (${xhr.status})`;
+          const fallback = xhr.status === 404 ? 'This code no longer works' : xhr.status === 413 ? EDGE_TOO_LARGE : `Upload failed (${xhr.status})`;
           reject(new ApiError(xhr.status, formatDetail(body?.detail, fallback), body));
         }
       });

@@ -14,7 +14,7 @@ export default {
         if (d.mode === 'text') facts.push('text only');
         return {
           title: d.target_name ? `Translated into ${d.target_name}` : 'Translated',
-          el: h('div', { class: 'ai-result' }, aiNotice(d.notice), facts.length ? h('p', { class: 'tally tally-left' }, facts.join(' · ')) : null),
+          el: h('div', { class: 'ai-result' }, aiNotice(), facts.length ? h('p', { class: 'tally tally-left' }, facts.join(' · ')) : null),
         };
       },
     };

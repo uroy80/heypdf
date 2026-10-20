@@ -1,11 +1,13 @@
 // The options sidebar: renders describeSchema() descriptors with the Broadsheet controls from ../styles.css,
-// keeps `values` in sync, applies show_if live and shows per-field errors.
+// keeps `values` in sync, applies show_if live and shows per-field errors. A field's hint (ui.help) sits behind a
+// small "i" next to its label (tip.js), never as a paragraph under the control.
 
 import { h, uid } from './dom.js';
 import { icon } from './icons.js';
 import { glyph } from './glyphs.js';
 import { isVisible, POSITIONS9, POS_ALIASES } from './schema.js';
 import { imageFileToDataUrl } from './imagedata.js';
+import { infoTip } from './tip.js';
 
 const POS_NAMES = {
   'top-left': 'Top left', 'top-center': 'Top centre', 'top-right': 'Top right',
@@ -41,6 +43,7 @@ export function renderForm(descs, opts) {
   const groups = new Map();
   const main = h('div', { class: 'pf-fields' });
   let advanced = null;
+  let advancedFields = null;
 
   const emit = (key, v) => {
     values[key] = v;
@@ -57,9 +60,10 @@ export function renderForm(descs, opts) {
     let host = main;
     if (d.advanced) {
       if (!advanced) {
-        advanced = h('details', { class: 'disclosure pf-advanced' }, h('summary', {}, 'More options'), h('div', { class: 'pf-fields' }));
+        advancedFields = h('div', { class: 'pf-fields' });
+        advanced = h('details', { class: 'disclosure pf-advanced' }, h('summary', {}, 'More options'), advancedFields);
       }
-      host = advanced.lastElementChild;
+      host = advancedFields;
     }
     if (d.group) {
       const gkey = `${d.advanced ? 'adv:' : ''}${d.group}`;
@@ -150,23 +154,27 @@ function wireError(row, control, errId) {
   row.focus = () => [control].flat()[0]?.focus();
 }
 
-function hintEl(text, id) {
-  return text ? h('p', { class: 'hint', id }, text) : null;
+/** The label (or a legend's text) with its info tip beside it, when the field has a hint. */
+function labelLine(labelEl, tip) {
+  return tip ? h('span', { class: 'label-line' }, labelEl, tip.el) : labelEl;
 }
 
 function buildField(d, values, emit, opts) {
   const id = uid('pf');
   const errId = `${id}-err`;
-  const hintId = `${id}-hint`;
   const v = values[d.key];
   const row = { el: null };
-  const describedBy = d.help ? hintId : null;
+  const tip = d.help ? infoTip(d.help, { label: `About ${d.label}` }) : null;
+  const describedBy = tip?.id || null;
+  // a fieldset is named by its label text alone (the tip button sits in the legend too)
+  const legendId = `${id}-legend`;
+  const legend = () => h('legend', { class: 'label' }, labelLine(h('span', { id: legendId }, d.label), tip));
 
   if (d.kind === 'boolean') {
     const input = h('input', { type: 'checkbox', role: 'switch', id, checked: Boolean(v), 'aria-describedby': describedBy, onchange: () => emit(d.key, input.checked) });
     row.el = h('div', { class: 'switch-field pf-row', dataset: { key: d.key } },
-      h('label', { class: 'switch', htmlFor: id }, input, h('span', { class: 'track', 'aria-hidden': 'true' }), h('span', { class: 'switch-label' }, d.label)),
-      hintEl(d.help, hintId), errorSlot(errId));
+      labelLine(h('label', { class: 'switch', htmlFor: id }, input, h('span', { class: 'track', 'aria-hidden': 'true' }), h('span', { class: 'switch-label' }, d.label)), tip),
+      errorSlot(errId));
     row.sync = () => { input.checked = Boolean(values[d.key]); };
     wireError(row, input, errId);
     return row;
@@ -183,8 +191,8 @@ function buildField(d, values, emit, opts) {
     const cols = longest > 26 ? 1 : d.options.length > 2 && longest > (d.options.length > 3 ? 11 : 16) ? 2 : Math.min(4, d.options.length);
     const rowEl = h('div', { class: `seg-row${cols === 1 ? ' seg-list' : ''}`, style: `--cols:${cols}` },
       d.options.map((o, i) => h('label', { class: 'seg-opt', title: String(o.label) }, inputs[i], h('span', {}, o.label))));
-    row.el = h('fieldset', { class: 'seg pf-row', dataset: { key: d.key }, 'aria-describedby': describedBy },
-      h('legend', { class: 'label' }, d.label), rowEl, hintEl(d.help, hintId), errorSlot(errId));
+    row.el = h('fieldset', { class: 'seg pf-row', dataset: { key: d.key }, 'aria-labelledby': legendId, 'aria-describedby': describedBy },
+      legend(), rowEl, errorSlot(errId));
     row.sync = () => inputs.forEach((i) => { i.checked = i.value === String(values[d.key]); });
     wireError(row, inputs, errId);
     return row;
@@ -198,8 +206,8 @@ function buildField(d, values, emit, opts) {
     if (d.nullable) sel.append(h('option', { value: '' }, '—'));
     for (const o of d.options) sel.append(h('option', { value: String(o.value), selected: String(o.value) === String(v) }, o.label));
     row.el = h('div', { class: 'field pf-row', dataset: { key: d.key } },
-      h('label', { class: 'label', htmlFor: id }, d.label),
-      h('div', { class: 'select-wrap' }, sel, icon('chevron', 16)), hintEl(d.help, hintId), errorSlot(errId));
+      labelLine(h('label', { class: 'label', htmlFor: id }, d.label), tip),
+      h('div', { class: 'select-wrap' }, sel, icon('chevron', 16)), errorSlot(errId));
     row.sync = () => { sel.value = values[d.key] == null ? '' : String(values[d.key]); };
     wireError(row, sel, errId);
     return row;
@@ -217,12 +225,12 @@ function buildField(d, values, emit, opts) {
     });
     const extras = d.options.filter((o) => !POSITIONS9.includes(canon(String(o.value))));
     const extraInputs = extras.map((o) => h('input', { type: 'radio', name, value: String(o.value), checked: String(o.value) === String(v), onchange: (e) => e.target.checked && emit(d.key, o.value) }));
-    row.el = h('fieldset', { class: 'pf-row pos', dataset: { key: d.key } },
-      h('legend', { class: 'label' }, d.label),
+    row.el = h('fieldset', { class: 'pf-row pos', dataset: { key: d.key }, 'aria-labelledby': legendId, 'aria-describedby': describedBy },
+      legend(),
       h('div', { class: 'pf-pos-wrap' },
         h('div', { class: 'pf-pos-grid' }, cells),
         extras.length ? h('div', { class: 'pf-pos-extras' }, extras.map((o, i) => h('label', { class: 'pf-pos-extra' }, extraInputs[i], h('span', {}, o.label)))) : null),
-      hintEl(d.help, hintId), errorSlot(errId));
+      errorSlot(errId));
     row.sync = () => {
       for (const i of row.el.querySelectorAll('input[type=radio]')) i.checked = i.value === String(values[d.key]);
     };
@@ -244,8 +252,8 @@ function buildField(d, values, emit, opts) {
       emit(d.key, Number(input.value));
     });
     row.el = h('div', { class: 'field slider pf-row', dataset: { key: d.key } },
-      h('div', { class: 'field-row' }, h('label', { class: 'label', htmlFor: id }, d.label), h('span', { class: 'slider-meta' }, out)),
-      input, hintEl(d.help, hintId), errorSlot(errId));
+      h('div', { class: 'field-row' }, labelLine(h('label', { class: 'label', htmlFor: id }, d.label), tip), h('span', { class: 'slider-meta' }, out)),
+      input, errorSlot(errId));
     row.sync = () => {
       if (values[d.key] != null) input.value = values[d.key];
       paint();
@@ -264,16 +272,16 @@ function buildField(d, values, emit, opts) {
     });
     const range = d.min != null && d.max != null ? `${d.min}–${d.max}${d.unit && d.unit !== '°' ? ` ${d.unit}` : d.unit || ''}` : '';
     row.el = h('div', { class: 'field pf-row', dataset: { key: d.key } },
-      h('div', { class: 'field-row' }, h('label', { class: 'label', htmlFor: id }, d.label), range ? h('span', { class: 'pf-range' }, range) : null),
+      h('div', { class: 'field-row' }, labelLine(h('label', { class: 'label', htmlFor: id }, d.label), tip), range ? h('span', { class: 'pf-range' }, range) : null),
       h('div', { class: 'input-wrap' }, input, d.unit ? h('span', { class: 'suffix', 'aria-hidden': 'true' }, d.unit) : null),
-      hintEl(d.help, hintId), errorSlot(errId));
+      errorSlot(errId));
     row.sync = (force) => { if (force || document.activeElement !== input) input.value = values[d.key] ?? ''; };
     wireError(row, input, errId);
     return row;
   }
 
   if (d.kind === 'password') {
-    const mk = (pid, label, key) => {
+    const mk = (pid, label, key, withTip) => {
       const input = h('input', { type: 'password', id: pid, class: 'input', autocomplete: 'new-password', spellcheck: 'false', value: values[key] ?? '', 'aria-describedby': describedBy, oninput: () => emit(key, input.value) });
       const reveal = h('button', {
         type: 'button', class: 'pf-reveal', 'aria-label': `Show ${label.toLowerCase()}`, 'aria-pressed': 'false',
@@ -284,11 +292,11 @@ function buildField(d, values, emit, opts) {
           reveal.replaceChildren(glyph(show ? 'eyeOff' : 'eye', 16));
         },
       }, glyph('eye', 16));
-      return { input, wrap: h('div', { class: 'field' }, h('label', { class: 'label', htmlFor: pid }, label), h('div', { class: 'input-wrap pf-pass' }, input, reveal)) };
+      return { input, wrap: h('div', { class: 'field' }, labelLine(h('label', { class: 'label', htmlFor: pid }, label), withTip ? tip : null), h('div', { class: 'input-wrap pf-pass' }, input, reveal)) };
     };
-    const a = mk(id, d.label, d.key);
+    const a = mk(id, d.label, d.key, true);
     const b = d.confirm ? mk(`${id}-2`, 'Repeat password', `${d.key}__confirm`) : null;
-    row.el = h('div', { class: 'stack-sm pf-row', dataset: { key: d.key } }, a.wrap, b?.wrap, hintEl(d.help, hintId), errorSlot(errId));
+    row.el = h('div', { class: 'stack-sm pf-row', dataset: { key: d.key } }, a.wrap, b?.wrap, errorSlot(errId));
     row.sync = () => {};
     wireError(row, [a.input, b?.input].filter(Boolean), errId);
     return row;
@@ -302,9 +310,9 @@ function buildField(d, values, emit, opts) {
       onclick: () => emit(d.key, c),
     }));
     row.el = h('div', { class: 'field pf-row', dataset: { key: d.key } },
-      h('label', { class: 'label', htmlFor: id }, d.label),
+      labelLine(h('label', { class: 'label', htmlFor: id }, d.label), tip),
       h('div', { class: 'pf-color' }, swatches.length ? h('div', { class: 'pf-swatches', role: 'group', 'aria-label': d.label }, swatches) : null, picker, hex),
-      hintEl(d.help, hintId), errorSlot(errId));
+      errorSlot(errId));
     row.sync = () => {
       if (document.activeElement !== hex) hex.value = values[d.key] ?? '';
       const x = hex6(values[d.key]);
@@ -321,10 +329,10 @@ function buildField(d, values, emit, opts) {
     const input = h('input', { type: 'text', id, class: 'input input-mono', list: listId, value: v ?? '', spellcheck: 'false', autocomplete: 'off', maxlength: d.maxLength ?? null, 'aria-describedby': describedBy, oninput: () => emit(d.key, input.value) });
     const chips = (d.suggestions || []).map((sug) => h('button', { type: 'button', class: 'qchip', 'aria-pressed': 'false', onclick: () => emit(d.key, sug) }, sug));
     row.el = h('div', { class: 'field pf-row', dataset: { key: d.key } },
-      h('label', { class: 'label', htmlFor: id }, d.label), input,
+      labelLine(h('label', { class: 'label', htmlFor: id }, d.label), tip), input,
       h('datalist', { id: listId }, (d.suggestions || []).map((sug) => h('option', { value: sug }))),
       chips.length ? h('div', { class: 'qchips pf-combo-chips' }, chips) : null,
-      hintEl(d.help, hintId), errorSlot(errId));
+      errorSlot(errId));
     row.sync = (force) => {
       if (force || document.activeElement !== input) input.value = values[d.key] ?? '';
       chips.forEach((c, i) => c.setAttribute('aria-pressed', String(d.suggestions[i] === values[d.key])));
@@ -355,7 +363,7 @@ function buildField(d, values, emit, opts) {
     });
     input.addEventListener('blur', add);
     row.el = h('div', { class: 'field pf-row', dataset: { key: d.key } },
-      h('label', { class: 'label', htmlFor: id }, d.label), chipsEl, input, hintEl(d.help || 'Press Enter after each one', hintId), errorSlot(errId));
+      labelLine(h('label', { class: 'label', htmlFor: id }, d.label), tip), chipsEl, input, errorSlot(errId));
     row.sync = () => {
       chipsEl.replaceChildren(...list().map((t, i) => h('li', { class: 'pf-tag' }, h('span', { class: 'break' }, t),
         h('button', { type: 'button', class: 'pf-tag-x', 'aria-label': `Remove ${t}`, onclick: () => emit(d.key, list().filter((_, k) => k !== i)) }, glyph('x', 12)))));
@@ -378,8 +386,8 @@ function buildField(d, values, emit, opts) {
           emit(d.key, d.options.filter((x) => s.has(String(x.value))).map((x) => x.value));
         },
       }, o.label));
-      row.el = h('fieldset', { class: 'seg pf-row', dataset: { key: d.key } }, h('legend', { class: 'label' }, d.label),
-        h('div', { class: 'qchips' }, btns), hintEl(d.help, hintId), errorSlot(errId));
+      row.el = h('fieldset', { class: 'seg pf-row', dataset: { key: d.key }, 'aria-labelledby': legendId, 'aria-describedby': describedBy }, legend(),
+        h('div', { class: 'qchips' }, btns), errorSlot(errId));
       row.sync = () => btns.forEach((b, i) => b.setAttribute('aria-pressed', String(sel().has(String(d.options[i].value)))));
       wireError(row, btns, errId);
       return row;
@@ -401,13 +409,13 @@ function buildField(d, values, emit, opts) {
       const q = filter.value.trim().toLowerCase();
       for (const b of boxes) b.hidden = q && !b.dataset.q.includes(q);
     });
-    row.el = h('fieldset', { class: 'field pf-row', dataset: { key: d.key } }, h('legend', { class: 'label' }, d.label), picked, filter,
-      h('div', { class: 'pf-checklist', role: 'group', 'aria-label': d.label }, boxes), hintEl(d.help, hintId), errorSlot(errId));
+    row.el = h('fieldset', { class: 'field pf-row', dataset: { key: d.key }, 'aria-labelledby': legendId, 'aria-describedby': describedBy }, legend(), picked, filter,
+      h('div', { class: 'pf-checklist', role: 'group', 'aria-label': d.label }, boxes), errorSlot(errId));
     row.sync = () => {
       const s = sel();
       boxes.forEach((b) => { b.firstChild.checked = s.has(b.firstChild.value); });
       const names = d.options.filter((o) => s.has(String(o.value))).map((o) => o.label);
-      picked.textContent = names.length ? names.join(' · ') : d.default === undefined && !d.required ? 'None picked — the server’s default is used' : 'None picked';
+      picked.textContent = names.length ? names.join(' · ') : d.default === undefined && !d.required ? 'None picked — default used' : 'None picked';
     };
     row.sync();
     wireError(row, filter, errId);
@@ -460,8 +468,8 @@ function buildField(d, values, emit, opts) {
       },
     }, glyph('upload', 16), h('span', {}, 'Choose file…'));
     const clear = h('button', { type: 'button', class: 'link-btn', hidden: !(v || values[dataKey]), onclick: () => { name.textContent = 'No file chosen'; clear.hidden = true; if (inline) values[dataKey] = null; emit(d.key, null); } }, 'Remove');
-    row.el = h('div', { class: 'field pf-row', dataset: { key: d.key } }, h('label', { class: 'label', htmlFor: id }, d.label),
-      h('div', { class: 'pf-file' }, pick, name, clear), hintEl(d.help, hintId), errorSlot(errId));
+    row.el = h('div', { class: 'field pf-row', dataset: { key: d.key } }, labelLine(h('label', { class: 'label', htmlFor: id }, d.label), tip),
+      h('div', { class: 'pf-file' }, pick, name, clear), errorSlot(errId));
     wireError(row, pick, errId);
     return row;
   }
@@ -470,24 +478,23 @@ function buildField(d, values, emit, opts) {
   const multiline = d.kind === 'text' || (d.kind === 'list' && /terms|words|search|phrases|queries/i.test(d.key));
   const valueText = (x) => (Array.isArray(x) ? x.join(multiline ? '\n' : ', ') : x ?? '');
   const input = multiline
-    ? h('textarea', { id, class: 'input pf-textarea', rows: 4, spellcheck: d.kind === 'text' ? 'true' : 'false', placeholder: d.placeholder || '', maxlength: d.maxLength ?? null, 'aria-describedby': describedBy })
+    ? h('textarea', { id, class: 'input pf-textarea', rows: 4, spellcheck: d.kind === 'text' ? 'true' : 'false', placeholder: d.placeholder || (d.kind === 'list' ? 'One per line' : ''), maxlength: d.maxLength ?? null, 'aria-describedby': describedBy })
     : h('input', {
       type: d.widget === 'url' ? 'url' : d.widget === 'date' ? 'date' : 'text', id, class: `input${d.kind === 'pages' ? ' input-mono' : ''}`,
       spellcheck: 'false', autocomplete: 'off', maxlength: d.maxLength ?? null,
-      placeholder: d.placeholder || (d.kind === 'pages' ? (d.nullable || !d.required ? 'All pages — or e.g. 1-3, 5' : 'e.g. 1-3, 5') : ''),
+      placeholder: d.placeholder || (d.kind === 'pages' ? (d.nullable || !d.required ? 'All pages — or e.g. 1-3, 5' : 'e.g. 1-3, 5') : d.kind === 'list' ? 'Separate with commas' : ''),
       'aria-describedby': describedBy,
     });
   input.value = valueText(v);
   input.addEventListener('input', () => emit(d.key, input.value));
   let pickBtn = null;
   if (d.kind === 'pages' && opts.onPickPages) {
-    pickBtn = h('button', { type: 'button', class: 'link-btn pf-pick', 'aria-pressed': 'false', onclick: () => opts.onPickPages(d.key, pickBtn) }, 'Pick on the pages');
+    pickBtn = h('button', { type: 'button', class: 'link-btn pf-pick', 'aria-pressed': 'false', onclick: () => opts.onPickPages(d.key, pickBtn) }, 'Pick pages');
   }
   const pagesNote = d.kind === 'pages' ? h('span', { class: 'pf-range' }) : null;
-  const listHint = d.kind === 'list' && !d.help ? (multiline ? 'One per line' : 'Separate with commas') : null;
   row.el = h('div', { class: 'field pf-row', dataset: { key: d.key } },
-    h('div', { class: 'field-row' }, h('label', { class: 'label', htmlFor: id }, d.label), pagesNote, pickBtn),
-    input, hintEl(d.help || listHint, hintId), errorSlot(errId));
+    h('div', { class: 'field-row' }, labelLine(h('label', { class: 'label', htmlFor: id }, d.label), tip), pagesNote, pickBtn),
+    input, errorSlot(errId));
   row.sync = (force) => {
     if (force || document.activeElement !== input) input.value = valueText(values[d.key]);
     if (pagesNote) {

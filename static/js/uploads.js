@@ -51,7 +51,7 @@ export function planBatches(items, { maxFiles = MAX_REQUEST_FILES, maxBytes = DE
 export const isEdgeTooLarge = (e) => e?.status === 413 && !e?.body;
 
 /** What to tell the user when a request is too large for the site (not for heypdf's own per-file limit). */
-export const EDGE_TOO_LARGE = 'Too large for one upload to this site — add fewer or smaller files at once';
+export const EDGE_TOO_LARGE = 'Too large for one upload — add fewer or smaller files';
 
 /**
  * Upload `items` in planned batches. `send(batch, onFrac)` uploads one batch and resolves {files, errors} (or

@@ -18,12 +18,8 @@ body.heypdf { display: flex; flex-direction: column; min-height: 100dvh; }
 
 .pdf-topbar .add-btn { text-decoration: none; }
 body[data-view="index"] .pdf-all { visibility: hidden; }
-.pdf-topbar .local-pill { cursor: help; }
-/* until /api/config has answered (or when it can't be reached) there is no privacy claim to show */
-.heypdf.copy-pending .local-pill, .heypdf.copy-unknown .local-pill,
-.heypdf.copy-pending .dateline-edition, .heypdf.copy-unknown .dateline-edition,
-.heypdf.copy-unknown .dz-privacy, .heypdf.copy-unknown .front-privacy { display: none; }
-
+/* the dateline band carries only the heyp · heypdf switch, centred: no policy line, no date */
+.heypdf .dateline { display: flex; justify-content: center; }
 .heypdf .dateline-mid { color: var(--ink); overflow: visible; }
 
 .pdf-main { flex: 1 0 auto; width: 100%; max-width: calc(var(--pdf-max) + 2 * var(--gutter)); margin: 0 auto; padding: 0 var(--gutter); }
@@ -46,7 +42,6 @@ body[data-view="index"] .pdf-all { visibility: hidden; }
 }
 .front-kicker::before, .front-kicker::after { content: ""; flex: 1; border-top: 1px solid var(--ink); }
 .front-count { color: var(--muted); font-family: var(--font-mono); letter-spacing: 0.06em; }
-.front-kicker > span + span::before { content: "·"; margin: 0 8px; color: var(--accent); }
 .front-title {
   margin-top: 22px;
   font: 600 var(--fs-display)/0.98 var(--font-display);
@@ -55,12 +50,6 @@ body[data-view="index"] .pdf-all { visibility: hidden; }
 }
 .front-title:focus { outline: none; }
 .front-title em { font-style: italic; font-weight: 520; }
-.front-lede {
-  max-width: 40em; margin-top: 16px;
-  color: var(--ink-2); font: italic 400 18px/1.45 var(--font-display); font-variation-settings: "opsz" 18;
-  text-wrap: pretty;
-}
-.front-privacy { font-style: normal; font-family: var(--font-ui); font-size: 14px; color: var(--ink); }
 .front-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 24px; width: min(640px, 100%); }
 .front-find { position: relative; flex: 1 1 280px; display: block; }
 .front-find .icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
@@ -86,7 +75,6 @@ body[data-view="index"] .pdf-all { visibility: hidden; }
 }
 .sec-no { color: var(--accent); font: 500 12px/1 var(--font-mono); letter-spacing: 0.04em; }
 .sec-name { font: 600 25px/1.1 var(--font-display); font-variation-settings: "opsz" 48; letter-spacing: -0.01em; font-style: italic; }
-.sec-deck { margin: 6px 0 10px; color: var(--muted); font: italic 400 14px/1.4 var(--font-display); font-variation-settings: "opsz" 14; }
 .sec-list { display: grid; }
 .sec-item { border-top: 1px solid var(--rule); }
 .sec-item:first-child { border-top-color: var(--ink); }
@@ -99,7 +87,7 @@ body[data-view="index"] .pdf-all { visibility: hidden; }
 a.sec-link:hover .sec-title { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; text-decoration-color: var(--accent); }
 a.sec-link:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .sec-item.is-off .sec-title, .sec-item.is-off .sec-sum { color: var(--muted); }
-.sec-off { color: var(--warn); font: 500 11.5px/1.35 var(--font-ui); }
+.sec-off { display: inline-flex; align-items: center; gap: 6px; color: var(--warn); font: 500 11.5px/1.35 var(--font-ui); }
 .sec-item.is-unfit { opacity: 0.38; }
 .fit-mark { color: var(--accent); font-size: 11px; }
 .front-none { padding: 40px 0; text-align: center; color: var(--muted); font: italic 400 18px/1.4 var(--font-display); }
@@ -135,12 +123,10 @@ a.sec-link:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px;
 .side-body > * { min-width: 0; }
 .tool-head { padding-bottom: 16px; }
 .tool-title:focus { outline: none; }
-.tool-fine { grid-column: 1 / -1; margin-top: 10px; color: var(--muted); font: 400 11.5px/1.5 var(--font-mono); letter-spacing: 0.02em; }
 .view-panel { display: grid; gap: 18px; }
 .pf-form, .pf-fields { display: grid; gap: 20px; min-width: 0; }
 .pf-group { gap: 16px; }
 .pf-advanced > .pf-fields { padding-top: 14px; }
-.pf-none { font-style: italic; }
 .pf-range { color: var(--muted); font: 400 11.5px/1 var(--font-mono); white-space: nowrap; }
 .pf-textarea { height: auto; min-height: 92px; padding: 10px 12px; line-height: 1.45; resize: vertical; font: 400 14px/1.45 var(--font-ui); }
 .pf-pass .input { padding-right: 44px; }
@@ -201,13 +187,11 @@ fieldset.pf-row > legend { padding: 0; margin-bottom: 7px; }
 .pdf-drop.is-off { cursor: default; border-style: solid; border-color: var(--rule); }
 .pdf-drop .dz-title { font-size: 54px; }
 .nofiles { display: grid; justify-items: center; gap: 0; padding: 60px 24px; text-align: center; border: 1px dashed var(--line); }
-.nofiles .dz-kicker { width: min(520px, 100%); }
 
 /* ── file cards: a contact sheet ─────────────────────────────────────────── */
 
 .cards-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
 .cards-tools .kicker { color: var(--ink); margin-right: 4px; }
-.cards-tools .hint { margin-left: auto; }
 /* unnumbered <ol>s (the order matters, the numbers are drawn by the cards): flush with the column, no markers */
 .cards, .pr-files, .sc-grid { margin: 0; padding: 0; list-style: none; }
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(164px, 1fr)); gap: 26px 22px; }
@@ -304,7 +288,6 @@ img.is-broken { visibility: hidden; }
 
 .pr { display: grid; gap: 22px; align-content: start; }
 .pr-head { display: grid; gap: 8px; padding-top: 14px; border-top: var(--thick) solid var(--ink); }
-.pr-kicker { color: var(--success); }
 .pr-title { font: 600 40px/1.02 var(--font-display); font-variation-settings: "opsz" 96; letter-spacing: -0.025em; }
 .pr-title:focus { outline: none; }
 .pr-delta { font-size: 14px; }
@@ -313,6 +296,7 @@ img.is-broken { visibility: hidden; }
 .pr-dl { display: flex; flex-wrap: wrap; gap: 10px; }
 .btn-dl { height: 50px; padding: 0 22px; font-size: 15px; text-decoration: none; max-width: 100%; }
 .btn-dl span { overflow: hidden; text-overflow: ellipsis; }
+.btn-dl .btn-dl-size { flex: none; padding-left: 10px; border-left: 1px solid currentColor; font: 500 12.5px/1 var(--font-mono); letter-spacing: 0.02em; }
 .pr-files { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 22px; }
 .pr-file { display: grid; gap: 8px; align-content: start; min-width: 0; }
 .pr-thumb { display: grid; place-items: center; aspect-ratio: 3 / 4; padding: 10px; border: 0; background: var(--canvas); cursor: zoom-in; }
@@ -616,7 +600,6 @@ select.ff-ctl { padding: 0 1px; line-height: 1; }
 .og-card.drop-before::before { left: -10px; }
 .og-card.drop-after::after { right: -10px; }
 .og-ghost { position: fixed; left: 0; top: 0; z-index: 100; padding: 6px 10px; background: var(--ink); color: var(--on-ink); font: 600 12px/1 var(--font-ui); pointer-events: none; }
-.og-help { margin: 0; }
 
 /* ── compare ────────────────────────────────────────────────────────────── */
 
@@ -727,14 +710,10 @@ select.ff-ctl { padding: 0 1px; line-height: 1; }
 .ph-actions { display: grid; gap: 10px; margin-top: 6px; }
 .ph-take { height: 64px; font-size: 17px; }
 .ph-status { display: flex; align-items: flex-start; gap: 6px; font-size: 15px; line-height: 1.45; }
-.ph-fine { margin-top: 8px; }
-body[data-view="phone"] .pdf-all, body[data-view="phone"] .sibling { visibility: hidden; }
-@media (max-width: 780px) {
-  /* phones hide the dateline's edition line; on the phone side of the scan hand-off (no app switch) it carries the
-     deletion fact instead of leaving an empty band */
-  body[data-view="phone"] .dateline-edition { display: block; }
-  body[data-view="phone"] .sibling { display: none; }
-}
+body[data-view="phone"] .pdf-all { visibility: hidden; }
+/* the phone side has no app switch: the dateline band closes to its thick rule */
+body[data-view="phone"] .sibling { display: none; }
+body[data-view="phone"] .dateline { height: auto; border-bottom: 0; }
 
 /* ── responsive ──────────────────────────────────────────────────────────── */
 
@@ -759,13 +738,10 @@ body[data-view="phone"] .pdf-all, body[data-view="phone"] .sibling { visibility:
 @media (max-width: 780px) {
   .pdf-topbar { position: relative; }
   .pdf-topbar .pdf-all { display: none; }
-  .heypdf .dateline { grid-template-columns: auto 1fr auto; }
   /* stays a flex row so the gap keeps "heyp · heypdf" apart (block glued the dot to "heypdf") */
-  .heypdf .dateline-mid { display: inline-flex; justify-self: center; }
-  .heypdf .dateline-date { display: none; }
+  .heypdf .dateline-mid { display: inline-flex; }
   .front-head { padding: 22px 0 20px; }
   .front-title { font-size: 40px; margin-top: 16px; }
-  .front-lede { font-size: 16px; }
   .contents { columns: 1; }
   .sec-name { font-size: 22px; }
   .cards { grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 22px 16px; }

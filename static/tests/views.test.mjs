@@ -208,6 +208,6 @@ test('editor geometry: shapes, bounding boxes and moves that stay on the page', 
 });
 
 test('catalogue wording: the signing certificate is an extra, not a second document', () => {
-  assert.equal(describeInputs(byId['pdf.sign']), 'PDF (plus a .p12 certificate if you sign digitally)');
+  assert.equal(describeInputs(byId['pdf.sign']), 'PDF', 'the certificate is chosen in the signing panel, not counted as a document');
   assert.equal(describeInputs(byId['pdf.from_office']), 'Office documents');
 });

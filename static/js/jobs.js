@@ -5,7 +5,7 @@ import { ApiError, formatDetail, retryAfterSeconds } from './api.js';
 
 const OFFLINE = 'Can’t reach heypdf. Check your connection and try again.';
 /** A proxy or CDN answered instead of heypdf (an HTML 502/504/52x page): never show its raw status line. */
-export const INTERRUPTED = 'The connection to heypdf was interrupted. Check your connection and try again.';
+export const INTERRUPTED = 'Connection lost — check it and try again.';
 
 /**
  * Parse Server-Sent Events. Returns [events, rest]: complete frames as {event, data, id} (data is parsed JSON when
@@ -53,7 +53,7 @@ async function errorFrom(res) {
     /* not JSON: a proxy's error page */
   }
   const retry = res.status === 503 || res.status === 429 ? retryAfterSeconds(res.headers.get('Retry-After')) : null;
-  const fallback = res.status === 404 ? 'Not found — the file or job may have expired'
+  const fallback = res.status === 404 ? 'Not found — upload the files again'
     : res.status === 429 ? 'Too many requests — please wait a moment'
       : res.status >= 500 || res.status === 408 ? INTERRUPTED
         : `${res.status} ${res.statusText || 'error'}`;

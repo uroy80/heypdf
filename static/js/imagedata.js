@@ -32,7 +32,7 @@ export async function imageFileToDataUrl(file, { maxSide = 2000 } = {}) {
   try {
     bmp = await createImageBitmap(file);
   } catch {
-    throw new Error('That picture could not be read by this browser — try a PNG or JPEG');
+    throw new Error('Can’t read that picture — try a PNG or JPEG');
   }
   let { w, h } = fitSide(bmp.width, bmp.height, maxSide);
   for (let attempt = 0; attempt < 4; attempt++) {

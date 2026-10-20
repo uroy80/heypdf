@@ -4,7 +4,7 @@
   {
    "id": "pdf.summarize",
    "title": "AI Summarizer",
-   "summary": "Get a short, faithful summary of a PDF, written as you watch.",
+   "summary": "A short summary of a PDF.",
    "category": "Intelligence",
    "slug": "summarize",
    "inputs": [
@@ -164,7 +164,7 @@
   {
    "id": "pdf.translate",
    "title": "Translate PDF",
-   "summary": "Translate a PDF into another language and keep its layout, images and tables.",
+   "summary": "Translate a PDF, keep its layout.",
    "category": "Intelligence",
    "slug": "translate",
    "inputs": [
@@ -301,7 +301,7 @@
   {
    "id": "pdf.from_images",
    "title": "JPG to PDF",
-   "summary": "Put photos and images into a PDF — page size, orientation and margins as you like.",
+   "summary": "Turn images into a PDF.",
    "category": "Convert to PDF",
    "slug": "from-images",
    "inputs": [
@@ -329,7 +329,7 @@
       "ui": {
        "labels": {
         "a4": "A4",
-        "fit": "Fit (same as image)",
+        "fit": "Fit image",
         "letter": "US Letter"
        },
        "widget": "segmented"
@@ -379,6 +379,7 @@
       "title": "Merge",
       "type": "boolean",
       "ui": {
+       "label": "Merge into one PDF",
        "widget": "toggle"
       }
      }
@@ -390,7 +391,7 @@
   {
    "id": "pdf.to_images",
    "title": "PDF to JPG",
-   "summary": "Turn each page into a JPG or PNG, or pull out the images inside the PDF.",
+   "summary": "Pages to JPG or PNG.",
    "category": "Convert from PDF",
    "slug": "to-images",
    "inputs": [
@@ -418,7 +419,7 @@
       "ui": {
        "labels": {
         "extract": "Extract images",
-        "pages": "Page to image"
+        "pages": "Pages to images"
        },
        "widget": "segmented"
       }
@@ -492,7 +493,7 @@
   {
    "id": "pdf.to_word",
    "title": "PDF to Word",
-   "summary": "An editable DOCX that keeps paragraphs, tables and images where it can.",
+   "summary": "Turn a PDF into Word.",
    "category": "Convert from PDF",
    "slug": "to-word",
    "inputs": [
@@ -520,6 +521,8 @@
       "title": "Mode",
       "type": "string",
       "ui": {
+       "help": "Text only suits scanned PDFs after OCR",
+       "label": "Conversion",
        "labels": {
         "auto": "Automatic",
         "layout": "Keep layout",
@@ -545,7 +548,7 @@
   {
    "id": "pdf.to_excel",
    "title": "PDF to Excel",
-   "summary": "Find the tables in a PDF and put them into a spreadsheet.",
+   "summary": "PDF tables into a spreadsheet.",
    "category": "Convert from PDF",
    "slug": "to-excel",
    "inputs": [
@@ -590,6 +593,8 @@
       "title": "Strategy",
       "type": "string",
       "ui": {
+       "help": "Lines: ruled tables. Text: columns lined up by spaces.",
+       "label": "Find tables by",
        "widget": "segmented"
       }
      },
@@ -599,6 +604,7 @@
       "title": "Numbers",
       "type": "boolean",
       "ui": {
+       "label": "Store numbers as numbers",
        "widget": "toggle"
       }
      },
@@ -619,7 +625,7 @@
   {
    "id": "pdf.to_markdown",
    "title": "PDF to Markdown",
-   "summary": "Clean Markdown with headings, lists, tables and links — handy for notes and AI tools.",
+   "summary": "Turn a PDF into Markdown.",
    "category": "Convert from PDF",
    "slug": "to-markdown",
    "inputs": [
@@ -654,6 +660,10 @@
       "title": "Images",
       "type": "string",
       "ui": {
+       "labels": {
+        "omit": "Leave out",
+        "placeholder": "Mark their place"
+       },
        "widget": "segmented"
       }
      },
@@ -676,6 +686,7 @@
       "title": "Page Breaks",
       "type": "boolean",
       "ui": {
+       "label": "Mark page breaks",
        "widget": "toggle"
       }
      }
@@ -687,7 +698,7 @@
   {
    "id": "pdf.compress",
    "title": "Compress PDF",
-   "summary": "Make a PDF smaller while keeping it readable — choose how hard to squeeze the images.",
+   "summary": "Make a PDF smaller.",
    "category": "Optimize",
    "slug": "compress",
    "inputs": [
@@ -716,9 +727,9 @@
       "type": "string",
       "ui": {
        "labels": {
-        "extreme": "Extreme — smallest file, lower image quality (72 dpi)",
-        "less": "Less — high quality, less compression (220 dpi)",
-        "recommended": "Recommended — good quality, good compression (150 dpi)"
+        "extreme": "Smallest file",
+        "less": "High quality",
+        "recommended": "Recommended"
        },
        "widget": "radio"
       }
@@ -731,7 +742,7 @@
   {
    "id": "pdf.repair",
    "title": "Repair PDF",
-   "summary": "Rebuild a damaged PDF that won't open, and recover as much of it as possible.",
+   "summary": "Fix a damaged PDF.",
    "category": "Optimize",
    "slug": "repair",
    "inputs": [
@@ -755,7 +766,7 @@
   {
    "id": "pdf.ocr",
    "title": "OCR PDF",
-   "summary": "Turn a scanned PDF into one you can search, select and copy text from.",
+   "summary": "Make scanned PDFs searchable.",
    "category": "Optimize",
    "slug": "ocr",
    "inputs": [
@@ -819,9 +830,10 @@
       },
       "maxItems": 3,
       "minItems": 1,
-      "title": "Document languages",
+      "title": "Languages",
       "type": "array",
       "ui": {
+       "help": "Up to three",
        "labels": {
         "ara": "Arabic",
         "asm": "Assamese",
@@ -870,30 +882,30 @@
        "redo",
        "force"
       ],
-      "title": "Pages that already have text",
+      "title": "Pages with text",
       "type": "string",
       "ui": {
        "labels": {
-        "force": "Rasterise and OCR every page",
-        "redo": "Replace an earlier OCR layer",
-        "skip": "Leave them as they are"
+        "force": "OCR every page",
+        "redo": "Redo OCR",
+        "skip": "Leave as they are"
        },
        "widget": "select"
       }
      },
      "deskew": {
       "default": true,
-      "title": "Straighten tilted scans",
+      "title": "Straighten scans",
       "type": "boolean"
      },
      "rotate_pages": {
       "default": true,
-      "title": "Fix upside-down and sideways pages",
+      "title": "Fix page rotation",
       "type": "boolean"
      },
      "pdfa": {
       "default": false,
-      "title": "Save as PDF/A-2b (archival)",
+      "title": "Save as PDF/A",
       "type": "boolean"
      }
     },
@@ -904,7 +916,7 @@
   {
    "id": "pdf.to_pdfa",
    "title": "PDF to PDF/A",
-   "summary": "Convert a PDF to PDF/A for long-term archiving (levels 1b, 2b, 3b).",
+   "summary": "Convert to PDF/A for archiving.",
    "category": "Convert from PDF",
    "slug": "to-pdfa",
    "inputs": [
@@ -948,7 +960,7 @@
   {
    "id": "pdf.from_office",
    "title": "Office to PDF",
-   "summary": "Convert Word, PowerPoint and Excel files (or their OpenDocument cousins) to PDF.",
+   "summary": "Word, Excel or PowerPoint to PDF.",
    "category": "Convert to PDF",
    "slug": "from-office",
    "inputs": [
@@ -967,12 +979,12 @@
     "properties": {
      "pdfa": {
       "default": false,
-      "title": "Save as PDF/A-2b (archival)",
+      "title": "Save as PDF/A",
       "type": "boolean"
      },
      "one_page_per_sheet": {
       "default": false,
-      "title": "Spreadsheets: each sheet on one page",
+      "title": "One page per sheet",
       "type": "boolean",
       "ui": {
        "show_if": {
@@ -993,7 +1005,7 @@
   {
    "id": "pdf.to_pptx",
    "title": "PDF to PowerPoint",
-   "summary": "Turn PDF pages into editable PowerPoint slides.",
+   "summary": "PDF pages to PowerPoint slides.",
    "category": "Convert from PDF",
    "slug": "to-pptx",
    "inputs": [
@@ -1018,7 +1030,7 @@
   {
    "id": "pdf.rotate",
    "title": "Rotate PDF",
-   "summary": "Turn pages the right way up — all of them, some, or only portrait or landscape ones.",
+   "summary": "Turn pages the right way up.",
    "category": "Edit",
    "slug": "rotate",
    "inputs": [
@@ -1045,6 +1057,7 @@
       "title": "Angle",
       "type": "integer",
       "ui": {
+       "label": "Turn",
        "labels": {
         "180": "Upside down",
         "270": "Left",
@@ -1073,6 +1086,7 @@
       "title": "Only",
       "type": "string",
       "ui": {
+       "label": "Only rotate",
        "widget": "segmented"
       }
      }
@@ -1084,7 +1098,7 @@
   {
    "id": "pdf.page_numbers",
    "title": "Add page numbers",
-   "summary": "Number pages in any corner, with your own format, font and starting number.",
+   "summary": "Number your pages.",
    "category": "Edit",
    "slug": "page-numbers",
    "inputs": [
@@ -1134,6 +1148,7 @@
         "Page {n} of {total}",
         "{roman}"
        ],
+       "help": "{n} number · {total} page count · {roman} numerals",
        "widget": "combo"
       }
      },
@@ -1145,6 +1160,7 @@
       "title": "Start",
       "type": "integer",
       "ui": {
+       "label": "First number",
        "widget": "number"
       }
      },
@@ -1164,6 +1180,7 @@
       "title": "Facing",
       "type": "boolean",
       "ui": {
+       "label": "Mirror on facing pages",
        "widget": "toggle"
       }
      },
@@ -1255,7 +1272,7 @@
   {
    "id": "pdf.watermark",
    "title": "Add watermark",
-   "summary": "Stamp text or an image over (or under) your pages, once or as a tiled pattern.",
+   "summary": "Stamp text or an image.",
    "category": "Edit",
    "slug": "watermark",
    "inputs": [
@@ -1385,6 +1402,7 @@
       "title": "Image Id",
       "ui": {
        "accept": "image",
+       "label": "Image",
        "show_if": {
         "kind": "image"
        },
@@ -1435,6 +1453,7 @@
         0.5,
         0.25
        ],
+       "label": "Transparency",
        "labels": {
         "0.25": "75%",
         "0.5": "50%",
@@ -1488,6 +1507,7 @@
       "title": "Mosaic",
       "type": "boolean",
       "ui": {
+       "label": "Tile across the page",
        "widget": "toggle"
       }
      },
@@ -1501,8 +1521,8 @@
       "type": "string",
       "ui": {
        "labels": {
-        "over": "Over the content",
-        "under": "Below the content"
+        "over": "Over content",
+        "under": "Under content"
        },
        "widget": "segmented"
       }
@@ -1535,7 +1555,7 @@
   {
    "id": "pdf.crop",
    "title": "Crop PDF",
-   "summary": "Trim margins or cut pages down to the area you draw.",
+   "summary": "Trim margins or cut pages.",
    "category": "Edit",
    "slug": "crop",
    "inputs": [
@@ -1653,6 +1673,8 @@
       "title": "Remove Outside",
       "type": "boolean",
       "ui": {
+       "help": "A crop alone only hides it",
+       "label": "Delete what's outside",
        "widget": "toggle"
       }
      }
@@ -1664,7 +1686,7 @@
   {
    "id": "pdf.edit",
    "title": "Edit PDF",
-   "summary": "Add text, images, shapes, highlights, white-out and drawings to any page.",
+   "summary": "Add text, shapes and drawings.",
    "category": "Edit",
    "slug": "edit",
    "inputs": [
@@ -2185,7 +2207,7 @@
   {
    "id": "pdf.forms",
    "title": "PDF forms",
-   "summary": "Fill in a form, add fields to a flat PDF (or let heypdf find the blanks) and flatten it.",
+   "summary": "Fill in or create forms.",
    "category": "Edit",
    "slug": "forms",
    "inputs": [
@@ -2347,6 +2369,8 @@
       "title": "Detect",
       "type": "boolean",
       "ui": {
+       "help": "Turns blanks, lines and boxes into fields",
+       "label": "Detect fields",
        "widget": "toggle"
       }
      },
@@ -2356,6 +2380,7 @@
       "title": "Flatten",
       "type": "boolean",
       "ui": {
+       "help": "Makes the form no longer editable",
        "widget": "toggle"
       }
      }
@@ -2367,7 +2392,7 @@
   {
    "id": "pdf.merge",
    "title": "Merge PDF",
-   "summary": "Combine several PDFs into one, in the order you set.",
+   "summary": "Combine PDFs into one.",
    "category": "Organize",
    "slug": "merge",
    "inputs": [
@@ -2412,7 +2437,7 @@
   {
    "id": "pdf.split",
    "title": "Split PDF",
-   "summary": "Cut a PDF into parts: by page ranges, every N pages, every page or by file size.",
+   "summary": "Cut a PDF into parts.",
    "category": "Organize",
    "slug": "split",
    "inputs": [
@@ -2455,6 +2480,7 @@
       "title": "Ranges",
       "type": "string",
       "ui": {
+       "help": "One file per range, e.g. 1-3, 5-last",
        "show_if": {
         "mode": "ranges"
        },
@@ -2467,6 +2493,7 @@
       "title": "Merge",
       "type": "boolean",
       "ui": {
+       "label": "Merge into one PDF",
        "show_if": {
         "mode": "ranges"
        },
@@ -2481,6 +2508,7 @@
       "title": "Every",
       "type": "integer",
       "ui": {
+       "label": "Pages per file",
        "show_if": {
         "mode": "fixed"
        },
@@ -2495,6 +2523,7 @@
       "title": "Max Mb",
       "type": "number",
       "ui": {
+       "label": "Max size per file",
        "show_if": {
         "mode": "size"
        },
@@ -2534,6 +2563,7 @@
       "title": "Pages",
       "type": "string",
       "ui": {
+       "label": "Pages to remove",
        "widget": "pages"
       }
      }
@@ -2548,7 +2578,7 @@
   {
    "id": "pdf.extract_pages",
    "title": "Extract pages",
-   "summary": "Take pages out of a PDF, as separate files or together in one.",
+   "summary": "Pull pages out of a PDF.",
    "category": "Organize",
    "slug": "extract-pages",
    "inputs": [
@@ -2571,6 +2601,7 @@
       "title": "Pages",
       "type": "string",
       "ui": {
+       "label": "Pages to extract",
        "widget": "pages"
       }
      },
@@ -2580,6 +2611,7 @@
       "title": "Merge",
       "type": "boolean",
       "ui": {
+       "label": "Merge into one PDF",
        "widget": "toggle"
       }
      }
@@ -2591,7 +2623,7 @@
   {
    "id": "pdf.organize",
    "title": "Organize PDF",
-   "summary": "Reorder, rotate, delete and insert pages — also pages from other PDFs and blank pages.",
+   "summary": "Reorder, rotate, add or delete pages.",
    "category": "Organize",
    "slug": "organize",
    "inputs": [
@@ -2697,7 +2729,7 @@
   {
    "id": "pdf.scan",
    "title": "Scan to PDF",
-   "summary": "Turn photos of paper into a clean, straightened PDF — or send them from your phone.",
+   "summary": "Turn photos of paper into PDF.",
    "category": "Organize",
    "slug": "scan",
    "inputs": [
@@ -2726,7 +2758,7 @@
       "ui": {
        "labels": {
         "a4": "A4",
-        "fit": "Fit (same as image)",
+        "fit": "Fit image",
         "letter": "US Letter"
        },
        "widget": "segmented"
@@ -2776,6 +2808,7 @@
       "title": "Merge",
       "type": "boolean",
       "ui": {
+       "label": "Merge into one PDF",
        "widget": "toggle"
       }
      },
@@ -2806,6 +2839,7 @@
       "title": "Detect",
       "type": "boolean",
       "ui": {
+       "label": "Find edges automatically",
        "widget": "toggle"
       }
      },
@@ -2865,7 +2899,7 @@
   {
    "id": "pdf.unlock",
    "title": "Unlock PDF",
-   "summary": "Remove the password and restrictions from a PDF you have the password for.",
+   "summary": "Remove a PDF's password.",
    "category": "Security",
    "slug": "unlock",
    "inputs": [
@@ -2895,6 +2929,7 @@
       "description": "Only needed if the file asks for one to open",
       "title": "Password",
       "ui": {
+       "help": "Only if the file needs one to open",
        "widget": "password"
       }
      }
@@ -2906,7 +2941,7 @@
   {
    "id": "pdf.protect",
    "title": "Protect PDF",
-   "summary": "Encrypt a PDF with a password (AES-256) and limit printing, copying or editing.",
+   "summary": "Lock a PDF with a password.",
    "category": "Security",
    "slug": "protect",
    "inputs": [
@@ -2941,6 +2976,7 @@
       "type": "string",
       "ui": {
        "group": "advanced",
+       "help": "Needed to change permissions. Random if empty.",
        "widget": "password"
       }
      },
@@ -3015,7 +3051,7 @@
   {
    "id": "pdf.sign",
    "title": "Sign PDF",
-   "summary": "Type, draw or upload your signature and place it — optionally with a digital (PAdES) signature from your own certificate.",
+   "summary": "Add your signature to a PDF.",
    "category": "Security",
    "slug": "sign",
    "inputs": [
@@ -3377,7 +3413,7 @@
   {
    "id": "pdf.redact",
    "title": "Redact PDF",
-   "summary": "Permanently remove text, numbers and areas — really gone, not just covered up.",
+   "summary": "Permanently remove sensitive content.",
    "category": "Security",
    "slug": "redact",
    "inputs": [
@@ -3449,6 +3485,7 @@
       "title": "Terms",
       "type": "array",
       "ui": {
+       "label": "Words to redact",
        "widget": "tags"
       }
      },
@@ -3472,6 +3509,7 @@
       "title": "Presets",
       "type": "array",
       "ui": {
+       "label": "Also find",
        "labels": {
         "aadhaar": "Aadhaar numbers",
         "card": "Card numbers",
@@ -3555,6 +3593,7 @@
       "title": "Fill",
       "type": "string",
       "ui": {
+       "label": "Box colour",
        "widget": "color"
       }
      },
@@ -3565,6 +3604,8 @@
       "title": "Label",
       "type": "string",
       "ui": {
+       "label": "Box label",
+       "placeholder": "e.g. REDACTED",
        "widget": "text"
       }
      },
@@ -3579,6 +3620,10 @@
       "type": "string",
       "ui": {
        "group": "advanced",
+       "labels": {
+        "pixels": "Blank covered part",
+        "remove": "Remove whole image"
+       },
        "widget": "segmented"
       }
      },
@@ -3593,6 +3638,8 @@
       "type": "string",
       "ui": {
        "group": "advanced",
+       "help": "Everything touched also removes backgrounds, fills and borders that reach into the box",
+       "label": "Vector graphics",
        "labels": {
         "covered": "Fully covered",
         "touched": "Everything touched"
@@ -3606,6 +3653,8 @@
       "title": "Sanitize",
       "type": "boolean",
       "ui": {
+       "help": "Also scripts and thumbnails",
+       "label": "Remove metadata and attachments",
        "widget": "toggle"
       }
      },
@@ -3616,6 +3665,7 @@
       "type": "boolean",
       "ui": {
        "group": "advanced",
+       "help": "Invisible text, e.g. an OCR layer",
        "widget": "toggle"
       }
      }
@@ -3627,7 +3677,7 @@
   {
    "id": "pdf.compare",
    "title": "Compare PDF",
-   "summary": "See what changed between two versions: word by word, or as a visual overlay.",
+   "summary": "See what changed between versions.",
    "category": "Security",
    "slug": "compare",
    "inputs": [
@@ -3675,6 +3725,7 @@
       "description": "Overlay: page of the first file (all if empty)",
       "title": "Page A",
       "ui": {
+       "help": "All pages if empty",
        "show_if": {
         "mode": "overlay"
        },
@@ -3733,6 +3784,7 @@
       "title": "Report",
       "type": "boolean",
       "ui": {
+       "label": "PDF report",
        "widget": "toggle"
       }
      }
@@ -3744,7 +3796,7 @@
   {
    "id": "pdf.from_html",
    "title": "HTML to PDF",
-   "summary": "Save a web page — or an HTML file — as a PDF, as one long page or split into printable pages.",
+   "summary": "Save a web page as PDF.",
    "category": "Convert to PDF",
    "slug": "from-html",
    "inputs": [
@@ -3764,7 +3816,7 @@
       "default": "",
       "description": "Leave empty to capture an uploaded HTML file instead",
       "maxLength": 2048,
-      "title": "Web page address",
+      "title": "Web address",
       "type": "string",
       "ui": {
        "placeholder": "https://example.com",
@@ -3796,19 +3848,19 @@
      },
      "block_cookie_banners": {
       "default": true,
-      "title": "Hide cookie banners and pop-ups",
+      "title": "Hide cookie banners",
       "type": "boolean"
      },
      "javascript": {
       "default": true,
-      "title": "Run the page's scripts",
+      "title": "Run scripts",
       "type": "boolean"
      },
      "delay": {
       "default": 0,
       "maximum": 10,
       "minimum": 0,
-      "title": "Wait before capturing",
+      "title": "Wait before capture",
       "type": "number",
       "ui": {
        "step": 0.5,
@@ -3869,11 +3921,14 @@
       "default": true,
       "description": "Keep the page as one continuous sheet, as it looks on screen",
       "title": "One long page",
-      "type": "boolean"
+      "type": "boolean",
+      "ui": {
+       "help": "No page breaks, as on screen"
+      }
      },
      "background": {
       "default": true,
-      "title": "Print backgrounds and colours",
+      "title": "Print backgrounds",
       "type": "boolean"
      }
     },

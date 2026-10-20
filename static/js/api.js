@@ -19,8 +19,8 @@ export class ApiError extends Error {
  * instead of heypdf: too large a request, or the server took longer than the proxy waits. Null otherwise.
  */
 export function edgeMessage(status) {
-  if (status === 413) return 'This upload is larger than the site accepts in one request. Try fewer or smaller files.';
-  if (status === 502 || status === 504 || (status >= 520 && status <= 524)) return 'The server took too long to answer. Try fewer or smaller files, or try again in a moment.';
+  if (status === 413) return 'This upload is larger than the site accepts — try fewer or smaller files.';
+  if (status === 502 || status === 504 || (status >= 520 && status <= 524)) return 'The server took too long — try again, or with smaller files.';
   if (status === 503) return 'The server is busy. Try again in a moment.';
   return null;
 }

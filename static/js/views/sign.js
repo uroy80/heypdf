@@ -14,6 +14,7 @@ import { imageFileToDataUrl, trimCanvas } from '../imagedata.js';
 import { checkPages } from '../pages.js';
 import { sampleDate } from '../schema.js';
 import { glyph } from '../glyphs.js';
+import { infoTip } from '../tip.js';
 
 const STYLES = [
   { value: 'type', label: 'Type' },
@@ -134,7 +135,7 @@ export default {
       }
       const clearBtn = h('button', { type: 'button', class: 'link-btn', onclick: () => { strokes.length = 0; redraw(); exportDrawn(); } }, 'Clear');
       pad = { recolor: () => { redraw(); if (strokes.length) exportDrawn(); } };
-      return h('div', { class: 'sig-pad-wrap' }, canvas, h('div', { class: 'sig-pad-foot' }, h('span', { class: 'hint' }, 'Sign above with a mouse, pen or finger'), clearBtn));
+      return h('div', { class: 'sig-pad-wrap' }, canvas, h('div', { class: 'sig-pad-foot' }, h('span', { class: 'hint' }, 'Sign above'), clearBtn));
     }
 
     // uploaded
@@ -162,7 +163,7 @@ export default {
           inp.click();
         },
       }, glyph('upload', 16), h('span', {}, 'Choose a picture…'));
-      return h('div', { class: 'stack-sm' }, h('div', { class: 'pf-file' }, btn, upName), h('p', { class: 'hint' }, 'A PNG with a transparent background looks best.'));
+      return h('div', { class: 'stack-sm' }, h('div', { class: 'pf-file' }, btn, upName));
     }
 
     function setStyle(s) {
@@ -175,7 +176,7 @@ export default {
       } else if (s === 'upload') {
         styleBody.replaceChildren(uploadBox());
       } else {
-        styleBody.replaceChildren(h('p', { class: 'hint' }, 'No visible signature — add text stamps below, or a digital signature only.'));
+        styleBody.replaceChildren(h('p', { class: 'hint' }, 'No visible signature.'));
       }
       sigChanged();
     }
@@ -213,17 +214,18 @@ export default {
       { kind: 'date', label: 'Date', glyph: 'calendar' },
       { kind: 'note', label: 'Text', glyph: 'stamp' },
     ].map((s) => h('button', { type: 'button', class: 'btn btn-sm', onclick: (e) => arm(s.kind, e) }, glyph(s.glyph, 15), h('span', {}, s.label)));
-    const PLACE_HINT = 'Pick what to place, then click on a page. With the keyboard it lands mid-page: move it with the arrow keys.';
+    const PLACE_HINT = 'Pick one, then click the page.';
     const placeHint = h('p', { class: 'hint' }, PLACE_HINT);
+    const placeTip = infoTip('With the keyboard it lands mid-page; move it with the arrow keys.', { label: 'Placing with the keyboard' });
     const selHost = h('div', { class: 'props' });
-    const placeSec = h('section', { class: 'stack-sm' }, h('h3', { class: 'props-title' }, 'Place on the pages'),
+    const placeSec = h('section', { class: 'stack-sm' }, h('div', { class: 'label-line' }, h('h3', { class: 'props-title' }, 'Place on the pages'), placeTip.el),
       h('div', { class: 'btn-row' }, placeBtn, ...stampBtns), placeHint, selHost);
     let armed = null;
 
     function arm(kind, ev = null) {
       if (!ed) return;
       armed = kind;
-      placeHint.textContent = kind === 'signature' ? 'Click where the signature goes (drag to size it).' : 'Click where the text goes.';
+      placeHint.textContent = kind === 'signature' ? 'Click where it goes, or drag to size it.' : 'Click where it goes.';
       // pressed from the keyboard (a click with detail 0): place it on the page in view right away
       ed.useTool('place', ev);
     }
@@ -257,7 +259,9 @@ export default {
       if (item.type === 'stamp') {
         const ta = h('input', { type: 'text', class: 'input', maxlength: 500, value: item.text, 'aria-label': 'Text' });
         ta.addEventListener('change', () => set({ text: ta.value || 'Text' }));
-        rows.push(h('div', { class: 'prop' }, h('span', { class: 'label' }, item.kind === 'date' ? 'Text — {date} becomes the date' : 'Text'), ta));
+        const dateTip = item.kind === 'date' ? infoTip('{date} becomes the signing date', { label: 'About {date}' }) : null;
+        if (dateTip) ta.setAttribute('aria-describedby', dateTip.id);
+        rows.push(h('div', { class: 'prop' }, h('span', { class: 'label-line' }, h('span', { class: 'label' }, 'Text'), dateTip?.el), ta));
         rows.push(selectProp('Font', item.font, fontOptions(stampFonts), (f) => { ensureFont(f); set({ font: f }); }).el);
         rows.push(h('div', { class: 'prop-pair' },
           numberProp('Size', item.size, (n) => set({ size: n, h: Math.max(item.h, textBoxHeight(item.text, n, pv.size(item.page).h)) }), { min: 4, max: 200, unit: 'pt' }).el,
@@ -335,8 +339,7 @@ export default {
       },
     }, icon('lock', 15), h('span', {}, 'Choose .p12 / .pfx…'));
     const digBody = h('div', { class: 'stack-sm', hidden: !v.digital },
-      h('div', { class: 'pf-file' }, certBtn, certName), pwInput, reason, location,
-      h('p', { class: 'hint' }, 'The certificate is used for one signing and deleted when it ends, so choose it again for each signing. Its password is kept only while the job runs.'));
+      h('div', { class: 'pf-file' }, certBtn, certName), pwInput, reason, location);
     digToggle.addEventListener('change', () => {
       digBody.hidden = !digToggle.checked;
       ctx.changed();
@@ -412,7 +415,7 @@ export default {
       },
       /** A 404 for a run that carried a certificate: say what is missing instead of "File not found or expired". */
       explainError(e) {
-        if (e?.status === 404 && usedCerts.length) return 'Your certificate is deleted after each signing attempt — choose it again, then run.';
+        if (e?.status === 404 && usedCerts.length) return 'Choose your certificate again, then run.';
         // a wrong certificate password: the next try needs the file again too, not a PDF password
         if (e?.status === 422 && usedCerts.length && /certificate/i.test(e?.detail || '')) return `${String(e.detail).replace(/[.\s]+$/, '')}. Choose your certificate again and re-enter its password.`;
         return null;

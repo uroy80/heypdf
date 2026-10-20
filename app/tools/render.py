@@ -67,15 +67,15 @@ def _decode_html(data: bytes) -> str:
 class HtmlToPdfOptions(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    url: str = Field("", max_length=URL_MAX, title="Web page address",
+    url: str = Field("", max_length=URL_MAX, title="Web address",
                      description="Leave empty to capture an uploaded HTML file instead",
                      json_schema_extra={"ui": {"widget": "url", "placeholder": "https://example.com"}})
     width: Width = Field(1440, title="Screen width",  # type: ignore[valid-type]
                          json_schema_extra={"ui": {"widget": "select", "labels": {str(k): v for k, v in WIDTHS.items()},
                                                    "unit": "px"}})
-    block_cookie_banners: bool = Field(True, title="Hide cookie banners and pop-ups")
-    javascript: bool = Field(True, title="Run the page's scripts")
-    delay: float = Field(0, ge=0, le=10, title="Wait before capturing",
+    block_cookie_banners: bool = Field(True, title="Hide cookie banners")
+    javascript: bool = Field(True, title="Run scripts")
+    delay: float = Field(0, ge=0, le=10, title="Wait before capture",
                          json_schema_extra={"ui": {"widget": "slider", "unit": "s", "step": 0.5}})
     page_size: Literal["A4", "Letter", "A3", "A5", "Legal"] = Field("A4", title="Page size",
                                                                     json_schema_extra={"ui": {"widget": "select"}})
@@ -87,8 +87,9 @@ class HtmlToPdfOptions(BaseModel):
         json_schema_extra={"ui": {"widget": "segmented", "labels": {"none": "None", "small": "Small (10 mm)",
                                                                     "big": "Big (20 mm)"}}})
     single_page: bool = Field(True, title="One long page",
-                              description="Keep the page as one continuous sheet, as it looks on screen")
-    background: bool = Field(True, title="Print backgrounds and colours")
+                              description="Keep the page as one continuous sheet, as it looks on screen",
+                              json_schema_extra={"ui": {"help": "No page breaks, as on screen"}})
+    background: bool = Field(True, title="Print backgrounds")
 
     @field_validator("url")
     @classmethod
@@ -164,7 +165,7 @@ register_engine_check("renderer", renderer.health)
 
 FROM_HTML = register(Tool(
     id="pdf.from_html", title="HTML to PDF",
-    summary="Save a web page — or an HTML file — as a PDF, as one long page or split into printable pages.",
+    summary="Save a web page as PDF.",
     category="Convert to PDF", inputs=("html",), options=HtmlToPdfOptions, run=run_html_to_pdf,
     min_files=0, max_files=1, engine="renderer", lane="render", timeout_s=TIMEOUT_S, validate=_validate,
     limits={"max_mb": HTML_MAX_BYTES >> 20},

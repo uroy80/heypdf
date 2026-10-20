@@ -7,8 +7,10 @@ import { h } from '../dom.js';
 import { icon } from '../icons.js';
 import { pdfapi } from '../pdfapi.js';
 import { glyph } from '../glyphs.js';
-import { phoneCopy } from '../copy.js';
 import { uploadBatches, MAX_REQUEST_FILES } from '../uploads.js';
+
+/** "3 pages sent to your computer." */
+export const sentLine = (n) => `${n} ${n === 1 ? 'page' : 'pages'} sent to your computer.`;
 
 const MAX_SIDE = 3000;
 const MAX_FILES = 50; // a scan session holds at most 50 pages; one request carries at most 20 (MAX_REQUEST_FILES)
@@ -32,7 +34,6 @@ async function reencode(file) {
 }
 
 export function mountPhone(root, { session, config = null }) {
-  const copy = phoneCopy(config);
   let sent = 0;
   let busy = false;
   const status = h('p', { class: 'ph-status', 'aria-live': 'polite' });
@@ -72,10 +73,10 @@ export function mountPhone(root, { session, config = null }) {
         stopped: () => failure?.status === 404, // the link expired: the rest can't go either
       });
       if (failure) throw failure;
-      status.replaceChildren(icon('check', 16), h('span', {}, ` ${copy.sent(sent)}`));
+      status.replaceChildren(icon('check', 16), h('span', {}, ` ${sentLine(sent)}`));
     } catch (e) {
       const lead = done ? `${done} of ${files.length} pictures sent. ` : '';
-      status.textContent = lead + (e?.status === 404 ? 'This link has expired. Make a new code on your computer.' : (e?.detail || 'Sending failed — check the connection and try again.'));
+      status.textContent = lead + (e?.status === 404 ? 'This code no longer works — make a new one on your computer.' : (e?.detail || 'Sending failed — check the connection and try again.'));
     } finally {
       busy = false;
       takeBtn.disabled = false;
@@ -89,17 +90,15 @@ export function mountPhone(root, { session, config = null }) {
 
   if (!session) {
     root.replaceChildren(h('section', { class: 'lost' },
-      h('p', { class: 'kicker' }, 'Scan with your phone'),
       h('h1', { class: 'lost-title' }, 'This link is incomplete.'),
-      h('p', { class: 'lost-lede' }, 'Scan the QR code on your computer again — it opens the right page.')));
+      h('p', { class: 'lost-lede' }, 'Scan the code on your computer again.')));
     return { destroy() {} };
   }
   root.replaceChildren(h('section', { class: 'ph' },
-    h('p', { class: 'kicker ph-kicker' }, 'heypdf · Scan with your phone'),
+    h('p', { class: 'kicker ph-kicker' }, 'Scan with your phone'),
     h('h1', { class: 'ph-title', tabindex: '-1' }, 'Photograph your pages.'),
-    h('p', { class: 'ph-lede' }, copy.lede),
+    h('p', { class: 'ph-lede' }, 'Lay each page flat in good light.'),
     h('div', { class: 'ph-actions' }, takeBtn, pickBtn, take, pick),
-    bar, status,
-    h('p', { class: 'hint ph-fine' }, copy.fine)));
+    bar, status));
   return { busy: () => busy, destroy() {}, focusTitle: () => root.querySelector('.ph-title')?.focus() };
 }

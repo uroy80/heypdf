@@ -39,10 +39,10 @@ export default {
     const panel = h('section', { class: 'vpanel', 'aria-label': 'Redact areas' },
       h('h2', { class: 'group-title' }, 'Areas'),
       pal.el,
-      h('p', { class: 'hint' }, 'Drag over anything — text, pictures, signatures — to black it out. The search below finds words for you.'),
+      h('p', { class: 'hint' }, 'Drag over anything to black it out.'),
       h('div', { class: 'btn-row' }, fullBtn),
       tally,
-      h('label', { class: 'switch' }, previewToggle, h('span', { class: 'track', 'aria-hidden': 'true' }), h('span', { class: 'switch-label' }, 'Show search matches on the pages')),
+      h('label', { class: 'switch' }, previewToggle, h('span', { class: 'track', 'aria-hidden': 'true' }), h('span', { class: 'switch-label' }, 'Show matches')),
       previewNote);
 
     function fullPages() {
@@ -119,13 +119,13 @@ export default {
         const n = Number(r?.count) || 0;
         const pages = new Set((r?.matches || []).map((m) => m.page)).size;
         previewNote.textContent = n
-          ? `${n} ${n === 1 ? 'match' : 'matches'} on ${pages} ${pages === 1 ? 'page' : 'pages'}${r.truncated ? ' (the first ones shown)' : ''} — marked in red, removed when you run.`
-          : 'No matches for this search.';
-        if (!boxes && n) previewNote.textContent += ' (They could not be placed on the pages.)';
+          ? `${n} ${n === 1 ? 'match' : 'matches'} on ${pages} ${pages === 1 ? 'page' : 'pages'}${r.truncated ? ' (first shown)' : ''}, in red`
+          : 'No matches';
+        if (!boxes && n) previewNote.textContent += ' (not shown on the pages)';
       } catch (e) {
         if (e?.name === 'AbortError' || my !== previewToken) return;
         clear();
-        previewNote.textContent = e?.status === 404 || e?.status === 405 ? 'This server can’t preview the search; it still runs.' : (e?.detail || 'The search preview failed.');
+        previewNote.textContent = e?.status === 404 || e?.status === 405 ? 'No preview here — the search still runs.' : (e?.detail || 'The search preview failed.');
       }
     }, 450);
 
@@ -178,7 +178,7 @@ export default {
         if (ws.problem()) return ws.problem();
         if (!ws.ready()) return null;
         const any = areas || (v.terms || []).length || (v.presets || []).length || (v.regex || []).length || String(v.full_pages || '').trim();
-        return any ? null : 'Draw a box, black out a page or search for words to redact';
+        return any ? null : 'Draw a box, black out a page, or add words';
       },
       collect() {
         return { options: { areas: redactAreas(ed?.items() || []) } };

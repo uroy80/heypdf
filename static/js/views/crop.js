@@ -20,7 +20,7 @@ export default {
     const readout = h('p', { class: 'crop-readout mono', 'aria-live': 'polite' });
     const panel = h('section', { class: 'vpanel', 'aria-label': 'Crop box' },
       h('h2', { class: 'group-title' }, 'Crop box'),
-      h('p', { class: 'hint crop-hint' }, 'Drag on a page to draw the box, or pull its handles. Everything outside it is cut from the pages you choose below.'),
+      h('p', { class: 'hint crop-hint' }, 'Drag on the page to draw the box.'),
       readout,
       h('div', { class: 'btn-row' },
         h('button', { type: 'button', class: 'btn btn-sm', onclick: () => reset(DEFAULT) }, 'Reset'),
@@ -33,7 +33,7 @@ export default {
 
     function paintReadout() {
       if (v.mode === 'auto') {
-        readout.textContent = 'Trimming margins automatically — no box needed.';
+        readout.textContent = 'Margins are found automatically.';
         return;
       }
       if (!box || !pv) {
@@ -42,7 +42,7 @@ export default {
       }
       const s = pv.size(box.page);
       const f = (n) => Math.round(n * MM);
-      readout.textContent = `${f(box.w * s.w)} × ${f(box.h * s.h)} mm · ${f(box.x * s.w)} mm from the left, ${f(box.y * s.h)} mm from the top (page ${box.page})`;
+      readout.textContent = `${f(box.w * s.w)} × ${f(box.h * s.h)} mm · page ${box.page}`;
     }
 
     function applyMode() {

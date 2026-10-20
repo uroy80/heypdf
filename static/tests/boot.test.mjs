@@ -20,11 +20,7 @@ function page(dom) {
     doc.body.append(el);
     return el;
   };
-  const pill = add('span', 'mode-pill', { class: 'local-pill' });
-  pill.hidden = true;
   add('button', 'theme-btn');
-  add('span', 'dateline-edition');
-  add('time', 'dateline-date');
   add('main', 'main');
   add('span', 'footer-operator');
   add('a', 'source-link', { href: 'https://github.com/uroy80/heypdf' });
@@ -61,14 +57,11 @@ test('/api/config failing at the edge → no "Local only", no deletion claim, th
   });
   try {
     assert.equal(configCalls, 2, 'retried once');
-    const pill = doc.querySelector('#mode-pill');
-    assert.equal(pill.hidden, true);
-    assert.equal(pill.textContent, '');
     assert.ok(doc.body.classList.contains('copy-unknown'));
     assert.ok(!doc.body.classList.contains('copy-pending'));
     const text = doc.body.textContent;
     assert.doesNotMatch(text, /local only|container|stay on|this machine|edition delayed/i);
-    assert.equal(doc.querySelector('.front-privacy'), null, 'no deletion line without the config');
+    assert.doesNotMatch(text, /deleted|auto-?delete|last use/i, 'no deletion line');
     assert.ok(doc.querySelector('.front'), 'the front page is up');
     assert.deepEqual(doc.querySelectorAll('.sec-off').map((e) => e.textContent), Array(3).fill('Unavailable on this server'), 'unknown mode: no internal reason');
   } finally {
@@ -76,7 +69,7 @@ test('/api/config failing at the edge → no "Local only", no deletion claim, th
   }
 });
 
-test('Hosted with AI off → the AI tools aren’t offered; the masthead states the TTLs', async () => {
+test('Hosted with AI off → the AI tools aren’t offered; no retention wording anywhere on the page', async () => {
   const { dom, doc } = await boot((url) => (url.startsWith('/api/config') ? json(HOSTED) : json({ tools: OFF_AI })));
   try {
     const titles = doc.querySelectorAll('.sec-title').map((t) => t.textContent);
@@ -84,9 +77,13 @@ test('Hosted with AI off → the AI tools aren’t offered; the masthead states 
     assert.ok(!titles.some((t) => /Summar|Translate/.test(t)), titles.join(', '));
     assert.doesNotMatch(doc.body.textContent, /Anthropic|API key|not set up/);
     assert.deepEqual(doc.querySelectorAll('.sec-off').map((e) => e.textContent), ['Not available on this site right now'], 'an outage, in public words');
-    assert.equal(doc.querySelector('#mode-pill').textContent, 'Auto-delete');
-    assert.equal(doc.querySelector('#dateline-edition').textContent, 'Files deleted 1 hour after last use');
-    assert.match(doc.querySelector('.front-privacy').textContent, /^Files are deleted 1 hour after you last use them \(4 hours at most\)\.$/);
+    // the config reports the TTLs (60 / 240 min); the UI never renders them
+    assert.doesNotMatch(doc.body.textContent, /deleted|auto-?delete|last use|\b(1|4) hours?\b|60 minutes|240 minutes/i);
+    assert.equal(doc.querySelector('.front-privacy'), null);
+    assert.equal(doc.querySelector('.sec-deck'), null, 'no section standfirsts');
+    for (const s of doc.querySelectorAll('.sec-sum').map((e) => e.textContent)) {
+      assert.ok(s.split(/\s+/).length <= 6, `tool card description over six words: "${s}"`);
+    }
     assert.equal(doc.querySelector('#footer-operator').textContent, 'Run by Usham Roy');
   } finally {
     dom.uninstall();

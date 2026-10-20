@@ -1,7 +1,7 @@
 /* heypdf — editorial design tokens ("Broadsheet").
    A newspaper contents page for documents: newsprint paper, true black ink, one editorial red.
    Fonts are self-hosted OFL files in ./fonts (no CDNs).
-   Light = day paper, dark = night ink. The dateline carries the date and one factual line from /api/config. */
+   Light = day paper, dark = night ink. The dateline band carries the heyp · heypdf switch. */
 
 /* ── type: 3 families, 5 files, 207 KB ───────────────────────────────── */
 
@@ -264,22 +264,6 @@ kbd {
   display: flex; align-items: center; gap: 2px;
 }
 
-/* left ear — the "Auto-delete" badge from /api/config (stays in .topbar-actions in the DOM) */
-.local-pill {
-  position: absolute; left: 0; top: calc(var(--nameplate-h) / 2); transform: translateY(-50%);
-  display: inline-flex; align-items: center; gap: 7px;
-  padding: 6px 9px 6px 8px;
-  border: 1px solid var(--ink);
-  color: var(--ink);
-  font: 700 var(--fs-kicker)/1 var(--font-ui); letter-spacing: var(--track-kicker); text-transform: uppercase;
-  cursor: help;
-}
-.local-pill::before {
-  content: ""; width: 8px; height: 4px; margin-top: -3px;
-  border-left: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor;
-  transform: rotate(-45deg);
-}
-
 /* NEW — dateline row: <p class="dateline">…</p> as the last child of .topbar */
 .dateline {
   grid-column: 1 / -1; grid-row: 2;
@@ -293,9 +277,7 @@ kbd {
   white-space: nowrap;
 }
 .dateline > * { overflow: hidden; text-overflow: ellipsis; }
-.dateline-edition { min-width: 0; }
 .dateline-mid { color: var(--muted); }
-.dateline-date { justify-self: end; }
 
 /* ── buttons ──────────────────────────────────────────────────────────── */
 
@@ -400,11 +382,6 @@ kbd {
   font: 400 11.5px/1.6 var(--font-mono); letter-spacing: 0.04em; text-transform: uppercase;
   text-wrap: balance;
 }
-.dz-privacy {
-  display: inline-flex; align-items: center; gap: 7px; margin-top: 10px;
-  color: var(--ink); font: 600 12.5px/1 var(--font-ui);
-}
-.dz-privacy .icon { color: var(--success); }
 .warning {
   display: flex; align-items: flex-start; gap: 7px;
   color: var(--warn); font: 500 12.5px/1.45 var(--font-ui);
@@ -724,11 +701,8 @@ input[type="search"]::-webkit-search-cancel-button:hover { background: var(--ink
 @media (max-width: 780px) {
   :root { --gutter: 16px; --nameplate-h: 54px; --fs-nameplate: 36px; --dateline-h: 25px; --col-gap: 0px; }
   .topbar { position: sticky; top: 0; z-index: 20; margin: 0; padding: 0 var(--gutter); }
-  .local-pill { left: var(--gutter); padding: 5px 7px 5px 6px; font-size: 9.5px; letter-spacing: 0.1em; }
-  .dateline { grid-template-columns: auto minmax(0, 1fr); font-size: 9.5px; letter-spacing: 0.1em; }
-  .dateline-edition { display: none; }
+  .dateline { font-size: 9.5px; letter-spacing: 0.1em; }
   .dateline-mid:not(.sibling) { display: none; }
-  .sibling { justify-content: flex-start; }
   .sibling-what { display: none; }
   .dz-inner { padding: 28px 20px; }
   .dz-kicker { margin-bottom: 20px; }
@@ -741,11 +715,6 @@ input[type="search"]::-webkit-search-cancel-button:hover { background: var(--ink
 
 @media (max-width: 480px) {
   .add-btn { width: 36px; padding: 0; margin-right: 0; }
-}
-
-/* small phones: the ear would run into the nameplate; the page itself still states the deletion times */
-@media (max-width: 400px) {
-  .local-pill { display: none; }
 }
 
 /* touch: grow the small targets to ≥ 32 px */
@@ -786,13 +755,28 @@ input[type="search"]::-webkit-search-cancel-button:hover { background: var(--ink
 .sibling-link[aria-current="page"] { color: var(--ink); box-shadow: inset 0 -2px 0 var(--accent); }
 .sibling-dot { color: var(--accent); font-weight: 700; }
 
-/* the masthead ear and the dateline line come from /api/config (masthead.js); nothing is printed until it has answered */
-.local-pill:empty { display: none; }
-.copy-pending .dateline-edition, .copy-unknown .dateline-edition { visibility: hidden; }
-/* until /api/config has said which kind of instance this is, no privacy claim is printed */
-.copy-pending .local-pill, .copy-pending .dz-privacy, .copy-pending .dz-lede { visibility: hidden; }
-.copy-unknown .local-pill { display: none; }
-.dz-privacy a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+/* ── info tips (tip.js): a field's hint behind a small "i" next to its label ─────────────────────── */
+.label-line { display: inline-flex; align-items: center; gap: 6px; min-width: 0; justify-self: start; }
+.tip { display: inline-flex; flex: none; vertical-align: middle; }
+/* a 24 px target around a 16 px ring */
+.tip-btn {
+  display: inline-grid; place-items: center; width: 24px; height: 24px; margin: -4px -4px -4px -2px; padding: 0;
+  border: 0; background: transparent; color: var(--muted); cursor: help;
+}
+.tip-btn > span {
+  display: grid; place-items: center; width: 16px; height: 16px;
+  border: 1px solid currentColor; border-radius: 50%;
+  font: italic 600 11px/1 var(--font-display); letter-spacing: 0; text-transform: none;
+}
+.tip-btn:hover, .tip.is-open .tip-btn { color: var(--ink); }
+.tip-btn:focus-visible { outline: 2px solid var(--focus); outline-offset: 0; }
+.tip-pop {
+  position: fixed; z-index: 60; display: none;
+  width: max-content; max-width: min(260px, calc(100vw - 16px)); padding: 8px 10px;
+  background: var(--ink); color: var(--paper); box-shadow: var(--shadow-2);
+  font: 400 12.5px/1.4 var(--font-ui); letter-spacing: 0; text-transform: none; text-align: left; white-space: normal;
+}
+.tip.is-open .tip-pop { display: block; }
 
 /* a dialog taller than the window scrolls */
 .dialog { max-height: calc(100dvh - 48px); overflow-y: auto; }

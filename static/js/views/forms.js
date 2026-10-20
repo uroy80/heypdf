@@ -8,6 +8,7 @@ import { singlePdf } from './workspace.js';
 import { palette, toggleRow } from '../props.js';
 import { newFields, fieldProblems, boxAt } from '../items.js';
 import { glyph } from '../glyphs.js';
+import { infoTip } from '../tip.js';
 
 const NAME_RE = /^[\p{L}\p{N}_ .\-[\]]{1,120}$/u;
 const KINDS = [
@@ -40,7 +41,7 @@ export default {
       summary,
       h('h2', { class: 'group-title' }, 'Add fields'),
       pal.el,
-      h('p', { class: 'hint' }, 'Pick a field type, then drag on the page where it goes.'),
+      h('p', { class: 'hint' }, 'Pick a type, then drag on the page.'),
       selHost);
 
     function paintSummary() {
@@ -103,7 +104,9 @@ export default {
         return;
       }
       const set = (patch) => ed.update(item.uid, patch);
-      const name = h('input', { type: 'text', class: 'input', value: item.name, maxlength: 120, 'aria-label': 'Field name' });
+      // radio buttons that share a group name form one question
+      const groupTip = item.kind === 'radio' ? infoTip('Buttons with the same group name form one question.', { label: 'About group names' }) : null;
+      const name = h('input', { type: 'text', class: 'input', value: item.name, maxlength: 120, 'aria-label': 'Field name', 'aria-describedby': groupTip?.id || null });
       const err = h('p', { class: 'field-error', hidden: true });
       name.addEventListener('change', () => {
         const ok = NAME_RE.test(name.value.trim());
@@ -115,7 +118,7 @@ export default {
       label.addEventListener('change', () => set({ label: label.value }));
       const rows = [
         h('p', { class: 'props-title' }, `Selected: ${KINDS.find((k) => k.id === item.kind)?.label || item.kind} field`),
-        h('div', { class: 'prop' }, h('span', { class: 'label' }, item.kind === 'radio' ? 'Group name' : 'Name'), name, err),
+        h('div', { class: 'prop' }, h('span', { class: 'label-line' }, h('span', { class: 'label' }, item.kind === 'radio' ? 'Group name' : 'Name'), groupTip?.el), name, err),
         h('div', { class: 'prop' }, h('span', { class: 'label' }, 'Label'), label),
       ];
       if (item.kind === 'combo' || item.kind === 'list') {
@@ -127,7 +130,7 @@ export default {
       if (item.kind === 'radio') {
         const val = h('input', { type: 'text', class: 'input', value: item.value || '', maxlength: 200, 'aria-label': 'This choice' });
         val.addEventListener('change', () => set({ value: val.value.trim() || 'choice' }));
-        rows.push(h('div', { class: 'prop' }, h('span', { class: 'label' }, 'This button’s choice'), val), h('p', { class: 'hint' }, 'Buttons with the same group name form one question.'));
+        rows.push(h('div', { class: 'prop' }, h('span', { class: 'label' }, 'This button’s choice'), val));
       }
       rows.push(toggleRow('Answer', [{ value: 'required', text: 'Required', on: item.required }], (_k, on) => set({ required: on }), { multi: true }).el);
       rows.push(h('div', { class: 'btn-row' }, h('button', { type: 'button', class: 'btn btn-sm btn-danger-ghost', onclick: () => ed.remove(item.uid) }, glyph('trash', 15), h('span', {}, 'Remove'))));
@@ -162,8 +165,8 @@ export default {
         fields = Array.isArray(info?.fields) ? info.fields.filter((f) => f && f.name && f.page) : [];
         const fillable = fields.filter((f) => !f.readonly && !['signature', 'button', 'other'].includes(f.type)).length;
         existingNote.textContent = fields.length
-          ? `${fillable} ${fillable === 1 ? 'field' : 'fields'} to fill — type into them on the page.`
-          : 'This PDF has no fields yet. Add them below, or switch on “Detect” to have blanks, lines and boxes turned into fields.';
+          ? `${fillable} ${fillable === 1 ? 'field' : 'fields'} — fill them on the page.`
+          : 'No fields yet — add some, or turn on Detect fields.';
         pv = createPageView({ file, info, onLayer: () => {} });
         host.append(pv.el);
         for (let n = 1; n <= pv.count; n++) mountFields(n);
@@ -195,7 +198,7 @@ export default {
       validate() {
         if (ws.problem()) return ws.problem();
         if (!ws.ready()) return null;
-        if (!changed.size && !created.length && !ctx.values.detect && !ctx.values.flatten) return 'Fill in a field, add one, or choose Detect or Flatten';
+        if (!changed.size && !created.length && !ctx.values.detect && !ctx.values.flatten) return 'Fill in or add a field, or turn on Detect or Flatten';
         return null;
       },
       collect() {

@@ -71,7 +71,7 @@ test('A wrong password keeps the password field; a 404 names the certificate, no
   view.fileIds([PDF.id]);
   view.onRunEnd({ ok: false });
   assert.equal(pw.value, 'typo', 'the user is fixing it');
-  assert.match(view.explainError({ status: 404, detail: 'File not found or expired' }), /certificate is deleted after each signing attempt — choose it again/);
+  assert.match(view.explainError({ status: 404, detail: 'File not found or expired' }), /^Choose your certificate again/);
   assert.equal(view.explainError({ status: 422, detail: 'x' }), null);
   // a run without a certificate leaves 404s to the page's own message
   view.fileIds([PDF.id]);

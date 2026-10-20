@@ -7,6 +7,7 @@ import { pdfapi } from '../pdfapi.js';
 import { serverImg } from '../components.js';
 import { organizePages, moveEntries } from '../items.js';
 import { glyph } from '../glyphs.js';
+import { infoTip } from '../tip.js';
 
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const SIZES = { s: 112, m: 150, l: 210 };
@@ -22,7 +23,9 @@ export default {
     let size = 'm';
     let drag = null;
 
-    const grid = h('ol', { class: 'og-grid', 'aria-label': 'Pages — drag to reorder' });
+    // the mouse and keyboard controls, behind an info tip on the toolbar (the grid points its description at it)
+    const controlsTip = infoTip('Click to select (Shift for a range, ⌘/Ctrl to add). Drag to move. Arrows move focus, ⌘/Ctrl+arrows move the page, R rotates, Delete removes.', { label: 'Mouse and keyboard controls' });
+    const grid = h('ol', { class: 'og-grid', 'aria-label': 'Pages — drag to reorder', 'aria-describedby': controlsTip.id });
     const legend = h('ul', { class: 'og-legend', 'aria-label': 'Files' });
     const count = h('span', { class: 'og-count mono', 'aria-live': 'polite' });
     const selBar = h('div', { class: 'og-selbar', hidden: true });
@@ -33,9 +36,9 @@ export default {
       h('button', { type: 'button', class: 'btn btn-sm', onclick: () => { seq = seq.slice().reverse(); paint(); } }, glyph('swap', 15), h('span', {}, 'Reverse')),
       h('button', { type: 'button', class: 'btn btn-sm btn-ghost', onclick: () => resetAll() }, 'Reset'),
       h('span', { class: 'og-sizes', role: 'group', 'aria-label': 'Thumbnail size' }, sizeBtns),
+      controlsTip.el,
       count);
-    const root = h('div', { class: 'og' }, bar, legend, selBar, grid,
-      h('p', { class: 'hint og-help' }, 'Click to select (Shift for a range, ⌘/Ctrl to add). Drag to move. Keys: arrows move focus, ⌘/Ctrl+arrows move the page, R rotates, Delete removes.'));
+    const root = h('div', { class: 'og' }, bar, legend, selBar, grid);
 
     const files = () => ctx.files().filter((f) => f.kind === 'pdf');
     const fileIndex = (id) => files().findIndex((f) => f.id === id);

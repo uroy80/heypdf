@@ -5,17 +5,6 @@ import { slugOf } from './router.js';
 
 export const CATEGORIES = ['Organize', 'Optimize', 'Convert to PDF', 'Convert from PDF', 'Edit', 'Security', 'Intelligence'];
 
-/** One-line section standfirsts for the front page (our own words). */
-export const CATEGORY_DECKS = {
-  Organize: 'Put pages in order, pull them apart, stitch files together.',
-  Optimize: 'Smaller, sounder, searchable.',
-  'Convert to PDF': 'Photos, documents and web pages, set as PDF.',
-  'Convert from PDF': 'Get the words, tables and pictures back out.',
-  Edit: 'Mark up, number, stamp and trim pages.',
-  Security: 'Lock, unlock, sign, black out and compare.',
-  Intelligence: 'Summaries and translations from the Claude API.',
-};
-
 export const KIND_EXTS = {
   pdf: ['pdf'],
   image: ['jpg', 'jpeg', 'png', 'webp', 'avif', 'heic', 'heif', 'hif', 'tif', 'tiff', 'bmp', 'gif', 'ico', 'jp2', 'j2k',
@@ -83,8 +72,8 @@ export function describeInputs(tool) {
   const names = [];
   const ins = inputsOf(tool);
   if (ins.includes('cert') && ins.length > 1) {
-    // Sign PDF: the certificate rides along with the document
-    return `${describeInputs({ inputs: ins.filter((i) => i !== 'cert') })} (plus a .p12 certificate if you sign digitally)`;
+    // Sign PDF: the certificate rides along with the document (it is chosen in the signing panel)
+    return describeInputs({ inputs: ins.filter((i) => i !== 'cert') });
   }
   for (const i of ins) {
     const n = KIND_NAMES[i] || EXT_NAMES[i] || i.toUpperCase();

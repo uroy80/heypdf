@@ -233,7 +233,7 @@ register_engine_check("ai", ai_status)   # kill switch, key file, misconfigurati
 SUMMARIZE = register(Tool(
     id="pdf.summarize",
     title="AI Summarizer",
-    summary="Get a short, faithful summary of a PDF, written as you watch.",
+    summary="A short summary of a PDF.",
     category="Intelligence",
     inputs=("pdf",),
     options=SummarizeOptions,
@@ -251,7 +251,7 @@ SUMMARIZE = register(Tool(
 TRANSLATE = register(Tool(
     id="pdf.translate",
     title="Translate PDF",
-    summary="Translate a PDF into another language and keep its layout, images and tables.",
+    summary="Translate a PDF, keep its layout.",
     category="Intelligence",
     inputs=("pdf",),
     options=TranslateOptions,

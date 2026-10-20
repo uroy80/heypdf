@@ -47,12 +47,12 @@ export function singlePdf(ctx, opts) {
     ctx.info(f.id).then((inf) => {
       if (my !== token) return;
       if (inf?.needs_password) {
-        problem = 'Unlock this PDF first — its pages can’t be shown';
+        problem = 'Unlock this PDF first';
         ctx.changed();
         // pages of a locked PDF can't be shown: unlock it first, then come back with the result
         const unlock = (ctx.tools || []).find((t) => t.id === 'pdf.unlock' && t.available !== false);
         host.replaceChildren(h('div', { class: 'note note-warn ws-locked' }, icon('lock', 15),
-          h('span', {}, 'This PDF is password-protected, so its pages can’t be shown here. '),
+          h('span', {}, 'This PDF is password-protected. '),
           unlock ? h('a', { href: `/${unlock.slug || 'unlock'}`, onclick: (e) => { e.preventDefault(); ctx.navigate?.(`/${unlock.slug || 'unlock'}`, { files: [f] }); } }, 'Unlock it first →') : null));
         return;
       }
@@ -64,7 +64,7 @@ export function singlePdf(ctx, opts) {
       if (my !== token) return;
       // no /info (older server, or the file expired): still show the pages, sized as A4
       if (e?.status === 404 && /expired|not found/i.test(e.detail || '')) {
-        host.replaceChildren(h('p', { class: 'note note-error' }, icon('alert', 15), h('span', {}, 'This file has expired on the server — upload it again.')));
+        host.replaceChildren(h('p', { class: 'note note-error' }, icon('alert', 15), h('span', {}, 'This file is gone — upload it again.')));
         return;
       }
       info = { pages: f.pages };
