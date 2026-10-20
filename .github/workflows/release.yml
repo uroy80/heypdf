@@ -154,18 +154,28 @@ jobs:
           args=()
           for t in "${tags[@]}"; do args+=(-t "$t"); done
           for d in *; do args+=("$IMAGE@sha256:$d"); done
-          docker buildx imagetools create "${args[@]}" \
-            --annotation "index:org.opencontainers.image.source=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
-            --annotation "index:org.opencontainers.image.revision=$GITHUB_SHA" \
-            --annotation "index:org.opencontainers.image.licenses=AGPL-3.0-or-later" \
-            --annotation "index:org.opencontainers.image.description=heypdf — self-hosted PDF toolbox"
+          # GHCR's blob storage occasionally fails a request; creating the same index again is harmless.
+          for attempt in 1 2 3 4 5; do
+            docker buildx imagetools create "${args[@]}" \
+              --annotation "index:org.opencontainers.image.source=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
+              --annotation "index:org.opencontainers.image.revision=$GITHUB_SHA" \
+              --annotation "index:org.opencontainers.image.licenses=AGPL-3.0-or-later" \
+              --annotation "index:org.opencontainers.image.description=heypdf — self-hosted PDF toolbox" && break
+            [ "$attempt" = 5 ] && { echo "::error::could not create the index"; exit 1; }
+            echo "registry request failed (attempt $attempt); retrying"; sleep $((attempt * 10))
+          done
       - name: Resolve the index digest
         id: index
         run: |
-          digest=$(docker buildx imagetools inspect "$IMAGE:sha-$GITHUB_SHA" --format '{{json .Manifest.Digest}}' | tr -d '"')
+          digest=""
+          for attempt in 1 2 3 4 5; do
+            digest=$(docker buildx imagetools inspect "$IMAGE:sha-$GITHUB_SHA" --format '{{json .Manifest.Digest}}' | tr -d '"') \
+              && [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]] && break
+            echo "registry request failed (attempt $attempt); retrying"; sleep $((attempt * 10))
+          done
           [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]] || { echo "::error::no digest for $IMAGE:sha-$GITHUB_SHA"; exit 1; }
           echo "digest=$digest" >>"$GITHUB_OUTPUT"
-          docker buildx imagetools inspect "$IMAGE@$digest"
+          docker buildx imagetools inspect "$IMAGE@$digest" || echo "::warning::could not print the index (registry hiccup); the digest above is final"
           echo "- \`$IMAGE@$digest\` (sha-$GITHUB_SHA)" >>"$GITHUB_STEP_SUMMARY"
       - name: SBOM (Syft, SPDX)
         uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
