@@ -438,7 +438,16 @@ def test_every_workflow_is_least_privilege_and_pinned():
             assert uses.startswith("./") or SHA_PIN.match(uses), f"{path.name}: {uses} is not pinned to a commit"
         checkouts = text.count("uses: actions/checkout@")
         assert text.count("persist-credentials: false") >= checkouts, f"{path.name}: checkout keeps credentials"
-        assert "pull_request_target" not in text and "secrets: inherit" not in text, path.name
+        assert "pull_request_target" not in text, path.name
+        # One exception to "no inherited secrets": release.yml's call of the local deploy workflow. The deploy key
+        # lives in the main-only "production" environment, which a called workflow only sees when the caller passes
+        # its secrets on — without it the automatic deploy silently skipped itself.
+        inherits = [m.start() for m in re.finditer(r"secrets: inherit", text)]
+        if path.name == "release.yml":
+            assert len(inherits) <= 1, path.name
+            assert all("uses: ./.github/workflows/deploy.yml" in text[max(0, i - 500):i] for i in inherits), path.name
+        else:
+            assert not inherits, path.name
 
 
 def _matrix_images(text: str) -> set[str]:
