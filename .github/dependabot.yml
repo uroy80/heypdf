@@ -7,8 +7,9 @@
 # - docker: Dependabot only sees FROM lines with a literal image, e.g.
 #     FROM python:3.12.15-slim-trixie@sha256:… AS pybase
 #   (not FROM ${PYTHON_IMAGE}); it then bumps tag and digest together. Python minor/major bumps are ignored.
-# - cooldown: wait a week before proposing a brand-new release (most hijacked releases are pulled within days);
-#   scripts/lock.sh and services/lock.sh can also refuse anything newer than 14 days (HEYP_LOCK_CUTOFF).
+# - cooldown: wait before proposing a brand-new release (most hijacked releases are pulled within days). pip waits
+#   14 days because the Relock workflow resolves with the same 14-day cutoff (scripts/lock.sh, HEYP_LOCK_CUTOFF);
+#   a shorter wait would open PRs the lock refuses.
 version: 2
 updates:
   - package-ecosystem: github-actions
@@ -30,7 +31,7 @@ updates:
       interval: weekly
       day: monday
     cooldown:
-      default-days: 7
+      default-days: 14
     groups:
       python-minor-patch:
         update-types: [minor, patch]
