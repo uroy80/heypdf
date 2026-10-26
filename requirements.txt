@@ -14,10 +14,10 @@ numpy==2.5.4
 opencv-python-headless==5.0.0.93  # Scan to PDF (page detection, perspective), Compare PDF (visual diff)
 resvg-py==0.5.0          # SVG → raster (MIT); always called with an explicit size cap + bundled fonts
 rawpy==0.27.1            # camera RAW (LibRaw, LGPL/CDDL)
-psd-tools==1.23.0        # 16/32-bit PSD + PSB (Pillow handles 8-bit composites)
+psd-tools==1.24.0        # 16/32-bit PSD + PSB (Pillow handles 8-bit composites)
 # --- PDF engines (AGPL-compatible) -----------------------------------------------------------------
 pymupdf==1.28.2          # MuPDF (AGPL-3.0) — merge/split/organize/render/redact/forms/edit/compare/markdown
-pikepdf==10.16.0         # qpdf — protect/unlock (known password only)/repair
+pikepdf==10.17.0         # qpdf — protect/unlock (known password only)/repair
 img2pdf==0.6.3           # lossless JPG → PDF
 pyhanko==0.37.0          # PAdES signatures with a user-supplied .p12
 pyhanko-certvalidator==0.32.1
@@ -25,4 +25,4 @@ pdf2docx==0.5.13         # PDF → Word
 python-docx==1.2.0
 openpyxl==3.1.5          # PDF → Excel
 # --- AI tools (off unless ANTHROPIC_API_KEY is set) -------------------------------------------------
-anthropic==1.11.0
+anthropic==1.13.0
